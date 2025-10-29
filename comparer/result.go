@@ -1,7 +1,7 @@
 package comparer
 
 import (
-	"github.com/gooddata/gdc-neobackstop/screenshotter"
+	"github.com/gooddata/gooddata-neobackstop/screenshotter"
 )
 
 // Result - todo some of these should be pointers

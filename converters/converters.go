@@ -2,10 +2,10 @@ package converters
 
 import (
 	"fmt"
-	"github.com/gooddata/gdc-neobackstop/browser"
-	"github.com/gooddata/gdc-neobackstop/internals"
-	"github.com/gooddata/gdc-neobackstop/scenario"
-	"github.com/gooddata/gdc-neobackstop/viewport"
+	"github.com/gooddata/gooddata-neobackstop/browser"
+	"github.com/gooddata/gooddata-neobackstop/internals"
+	"github.com/gooddata/gooddata-neobackstop/scenario"
+	"github.com/gooddata/gooddata-neobackstop/viewport"
 	"sort"
 	"time"
 )

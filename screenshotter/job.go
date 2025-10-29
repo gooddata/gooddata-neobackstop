@@ -2,8 +2,8 @@ package screenshotter
 
 import (
 	"fmt"
-	"github.com/gooddata/gdc-neobackstop/internals"
-	"github.com/gooddata/gdc-neobackstop/screenshotter/operations"
+	"github.com/gooddata/gooddata-neobackstop/internals"
+	"github.com/gooddata/gooddata-neobackstop/screenshotter/operations"
 	"log"
 	"strings"
 	"time"

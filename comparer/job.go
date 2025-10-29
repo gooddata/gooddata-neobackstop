@@ -1,8 +1,8 @@
 package comparer
 
 import (
-	"github.com/gooddata/gdc-neobackstop/config"
-	"github.com/gooddata/gdc-neobackstop/screenshotter"
+	"github.com/gooddata/gooddata-neobackstop/config"
+	"github.com/gooddata/gooddata-neobackstop/screenshotter"
 	"os"
 )
 

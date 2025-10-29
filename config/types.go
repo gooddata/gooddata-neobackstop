@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/gooddata/gdc-neobackstop/browser"
-	"github.com/gooddata/gdc-neobackstop/viewport"
+	"github.com/gooddata/gooddata-neobackstop/browser"
+	"github.com/gooddata/gooddata-neobackstop/viewport"
 )
 
 type HtmlReportConfig struct {

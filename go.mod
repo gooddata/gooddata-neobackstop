@@ -1,4 +1,4 @@
-module github.com/gooddata/gdc-neobackstop
+module github.com/gooddata/gooddata-neobackstop
 
 go 1.25.3
 
