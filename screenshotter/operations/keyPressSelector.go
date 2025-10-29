@@ -1,7 +1,7 @@
 package operations
 
 import (
-	"github.com/gooddata/gdc-neobackstop/internals"
+	"github.com/gooddata/gooddata-neobackstop/internals"
 	"slices"
 	"strings"
 

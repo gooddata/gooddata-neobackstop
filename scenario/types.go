@@ -1,7 +1,7 @@
 package scenario
 
 import (
-	"github.com/gooddata/gdc-neobackstop/viewport"
+	"github.com/gooddata/gooddata-neobackstop/viewport"
 )
 
 type KeyPressSelector struct {

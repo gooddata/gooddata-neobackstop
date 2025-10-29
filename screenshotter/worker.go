@@ -2,9 +2,9 @@ package screenshotter
 
 import (
 	"fmt"
-	"github.com/gooddata/gdc-neobackstop/browser"
-	"github.com/gooddata/gdc-neobackstop/config"
-	"github.com/gooddata/gdc-neobackstop/internals"
+	"github.com/gooddata/gooddata-neobackstop/browser"
+	"github.com/gooddata/gooddata-neobackstop/config"
+	"github.com/gooddata/gooddata-neobackstop/internals"
 	"log"
 	"strconv"
 	"sync"

@@ -2,7 +2,7 @@ package screenshotter
 
 import (
 	"fmt"
-	"github.com/gooddata/gdc-neobackstop/viewport"
+	"github.com/gooddata/gooddata-neobackstop/viewport"
 
 	"github.com/playwright-community/playwright-go"
 )

@@ -71,7 +71,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            gooddata/gdc-neobackstop:${{ steps.version.outputs.VERSION }}
+            gooddata/gooddata-neobackstop:${{ steps.version.outputs.VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -80,13 +80,13 @@ jobs:
 
       - name: Tag image as latest
         run: |
-          crane tag gooddata/gdc-neobackstop:${{ steps.version.outputs.VERSION }} latest
+          crane tag gooddata/gooddata-neobackstop:${{ steps.version.outputs.VERSION }} latest
 
       - name: Build summary
         run: |
           echo "### Docker Image Published Successfully ✅" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** gooddata/gdc-neobackstop" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** gooddata/gooddata-neobackstop" >> $GITHUB_STEP_SUMMARY
           echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
           echo "- \`${{ steps.version.outputs.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- \`latest\`" >> $GITHUB_STEP_SUMMARY
@@ -298,26 +298,26 @@ jobs:
 
           The Docker image for this release has been published to DockerHub:
 
-          **Repository:** \`gooddata/gdc-neobackstop\`
+          **Repository:** \`gooddata/gooddata-neobackstop\`
 
           **Tags:**
-          - \`gooddata/gdc-neobackstop:${VERSION}\`
-          - \`gooddata/gdc-neobackstop:latest\`
+          - \`gooddata/gooddata-neobackstop:${VERSION}\`
+          - \`gooddata/gooddata-neobackstop:latest\`
 
           ### Pull Commands
 
           \`\`\`bash
           # Pull specific version
-          docker pull gooddata/gdc-neobackstop:${VERSION}
+          docker pull gooddata/gooddata-neobackstop:${VERSION}
 
           # Pull latest
-          docker pull gooddata/gdc-neobackstop:latest
+          docker pull gooddata/gooddata-neobackstop:latest
           \`\`\`
 
           ### Run Command
 
           \`\`\`bash
-          docker run --rm gooddata/gdc-neobackstop:${VERSION} [command]
+          docker run --rm gooddata/gooddata-neobackstop:${VERSION} [command]
           \`\`\`
 
           ## Changelog
@@ -354,6 +354,6 @@ jobs:
           echo "**Release:** v${VERSION}" >> $GITHUB_STEP_SUMMARY
           echo "**Tag:** v${VERSION}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Docker Image:** \`gooddata/gdc-neobackstop:${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Docker Image:** \`gooddata/gooddata-neobackstop:${VERSION}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "[View Release](https://github.com/${{ github.repository }}/releases/tag/v${VERSION})" >> $GITHUB_STEP_SUMMARY

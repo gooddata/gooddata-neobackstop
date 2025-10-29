@@ -1,7 +1,7 @@
 package result
 
 import (
-	"github.com/gooddata/gdc-neobackstop/internals"
+	"github.com/gooddata/gooddata-neobackstop/internals"
 )
 
 type Result struct {
