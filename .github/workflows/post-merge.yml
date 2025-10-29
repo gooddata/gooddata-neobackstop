@@ -1,0 +1,359 @@
+name: Push ~ post merge phase
+
+on:
+  push:
+    branches: ["master"]
+
+jobs:
+  check-dependencies-changed:
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.filter.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            changed:
+              - 'go.sum'
+
+  fossa-scan:
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+    name: fossa-scan
+    needs: check-dependencies-changed
+    if: ${{ needs.check-dependencies-changed.outputs.changed == 'true' }}
+    uses: ./.github/workflows/rw-fossa.yml
+    with:
+      branch: 'master'
+    secrets: inherit
+
+  docker-build-and-publish:
+    name: Build and publish Docker image
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    environment: public-release
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Read VERSION file
+        id: version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Version to be published: ${VERSION}"
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: gooddatatiger
+          password: ${{ secrets.DOCKERHUB_WRITE_TOKEN }}
+
+      - name: Build and push Docker image with version tag
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            gooddata/gdc-neobackstop:${{ steps.version.outputs.VERSION }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Install crane
+        uses: imjasonh/setup-crane@v0.3
+
+      - name: Tag image as latest
+        run: |
+          crane tag gooddata/gdc-neobackstop:${{ steps.version.outputs.VERSION }} latest
+
+      - name: Build summary
+        run: |
+          echo "### Docker Image Published Successfully ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** gooddata/gdc-neobackstop" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.version.outputs.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+  create-git-tag:
+    name: Create and push Git tag
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read VERSION file
+        id: version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Git tag to be created: v${VERSION}"
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Create and push Git tag
+        run: |
+          TAG_NAME="v${{ steps.version.outputs.VERSION }}"
+
+          # Check if tag already exists
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists. Skipping tag creation."
+            echo "### Git Tag Already Exists ⚠️" >> $GITHUB_STEP_SUMMARY
+            echo "Tag \`$TAG_NAME\` already exists for this version." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Creating tag $TAG_NAME for commit ${{ github.sha }}"
+            git tag -a "$TAG_NAME" -m "Release version ${{ steps.version.outputs.VERSION }}"
+            git push origin "$TAG_NAME"
+            echo "Successfully created and pushed tag: $TAG_NAME"
+
+            echo "### Git Tag Created Successfully ✅" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Tag:** \`$TAG_NAME\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** ${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  extract-changelog:
+    name: Extract and display changelog entry
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    permissions:
+      contents: read
+    outputs:
+      changelog_text: ${{ steps.output.outputs.changelog_text }}
+      changelog_json: ${{ steps.output.outputs.changelog_json }}
+      version: ${{ steps.version.outputs.VERSION }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read VERSION file
+        id: version
+        run: |
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Extracting changelog for version: ${VERSION}"
+
+      - name: Extract changelog entry for current version
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          echo "Extracting changelog entry for version $VERSION..."
+
+          # Check if the version exists in the changelog
+          if ! grep -q "## \[$VERSION\]" CHANGELOG.md; then
+            echo "⚠️ Warning: CHANGELOG.md does not contain an entry for version $VERSION" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
+          # Extract the section for this version using awk
+          # This gets everything from the version header to the next version header or end of file
+          awk "/## \[$VERSION\]/,/## \[/" CHANGELOG.md | head -n -1 > /tmp/version_section.txt
+
+          # If the above didn't capture anything (last version in file), try without the ending pattern
+          if [ ! -s /tmp/version_section.txt ]; then
+            awk "/## \[$VERSION\]/,EOF" CHANGELOG.md > /tmp/version_section.txt
+          fi
+
+          # Save the changelog content to a file for the summary
+          cat /tmp/version_section.txt > /tmp/changelog_content.txt
+
+          # Output the raw content for debugging
+          echo "Changelog content extracted:"
+          cat /tmp/changelog_content.txt
+
+      - name: Create changelog summary
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+
+          echo "## 📋 Release Notes for v${VERSION}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f /tmp/changelog_content.txt ] && [ -s /tmp/changelog_content.txt ]; then
+            # Process and format the changelog content for the summary
+            while IFS= read -r line; do
+              # Skip empty lines at the beginning
+              if [[ -z "$line" ]] && [[ ! "$started" ]]; then
+                continue
+              fi
+              started=true
+
+              # Format headers and content
+              if [[ "$line" =~ ^##[[:space:]]\[.*\] ]]; then
+                # Version header - make it bold
+                echo "**${line}**" >> $GITHUB_STEP_SUMMARY
+              elif [[ "$line" =~ ^###[[:space:]] ]]; then
+                # Section headers (Added, Changed, etc.) - keep as is
+                echo "$line" >> $GITHUB_STEP_SUMMARY
+              else
+                # Regular content - preserve formatting
+                echo "$line" >> $GITHUB_STEP_SUMMARY
+              fi
+            done < /tmp/changelog_content.txt
+          else
+            echo "⚠️ No changelog entry found for version ${VERSION}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Consider adding a changelog entry in the following format:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "## [${VERSION}] - $(date +%Y-%m-%d)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Added" >> $GITHUB_STEP_SUMMARY
+            echo "- New features" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Changed" >> $GITHUB_STEP_SUMMARY
+            echo "- Changes in existing functionality" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Fixed" >> $GITHUB_STEP_SUMMARY
+            echo "- Bug fixes" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Output changelog for other jobs
+        id: output
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+
+          if [ -f /tmp/changelog_content.txt ] && [ -s /tmp/changelog_content.txt ]; then
+            # Read the changelog content
+            CHANGELOG_TEXT=$(cat /tmp/changelog_content.txt)
+
+            # Create a JSON-safe version by escaping special characters
+            CHANGELOG_JSON=$(cat /tmp/changelog_content.txt | jq -Rs .)
+
+            # For multiline output in GitHub Actions, we use EOF delimiter
+            echo "changelog_text<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGELOG_TEXT" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+
+            # Output JSON version
+            echo "changelog_json=${CHANGELOG_JSON}" >> $GITHUB_OUTPUT
+
+            echo "Changelog content has been set as output"
+          else
+            # Set empty values if no changelog found
+            echo "changelog_text=No changelog entry found for version ${VERSION}" >> $GITHUB_OUTPUT
+            echo "changelog_json=\"No changelog entry found for version ${VERSION}\"" >> $GITHUB_OUTPUT
+            echo "No changelog content to output"
+          fi
+
+  create-github-release:
+    name: Create GitHub Release
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    needs: [docker-build-and-publish, create-git-tag, extract-changelog]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read VERSION file
+        id: version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Creating GitHub release for version: ${VERSION}"
+
+      - name: Create Release Body
+        id: release_body
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          CHANGELOG="${{ needs.extract-changelog.outputs.changelog_text }}"
+
+          # Create the release body with Docker information and changelog
+          cat << EOF > release_body.md
+          ## Docker Image
+
+          The Docker image for this release has been published to DockerHub:
+
+          **Repository:** \`gooddata/gdc-neobackstop\`
+
+          **Tags:**
+          - \`gooddata/gdc-neobackstop:${VERSION}\`
+          - \`gooddata/gdc-neobackstop:latest\`
+
+          ### Pull Commands
+
+          \`\`\`bash
+          # Pull specific version
+          docker pull gooddata/gdc-neobackstop:${VERSION}
+
+          # Pull latest
+          docker pull gooddata/gdc-neobackstop:latest
+          \`\`\`
+
+          ### Run Command
+
+          \`\`\`bash
+          docker run --rm gooddata/gdc-neobackstop:${VERSION} [command]
+          \`\`\`
+
+          ## Changelog
+
+          ${CHANGELOG}
+
+          ## Build Information
+
+          - **Commit:** ${{ github.sha }}
+          - **Build Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          - **Workflow Run:** [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          EOF
+
+          echo "Release body created"
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ steps.version.outputs.VERSION }}
+          name: Release v${{ steps.version.outputs.VERSION }}
+          bodyFile: release_body.md
+          draft: false
+          prerelease: false
+          makeLatest: true
+          generateReleaseNotes: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Summary
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+
+          echo "### 🎉 GitHub Release Created Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Release:** v${VERSION}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** v${VERSION}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Docker Image:** \`gooddata/gdc-neobackstop:${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Release](https://github.com/${{ github.repository }}/releases/tag/v${VERSION})" >> $GITHUB_STEP_SUMMARY

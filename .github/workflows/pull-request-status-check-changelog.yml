@@ -1,0 +1,141 @@
+name: Pull request ~ status check ~ changelog
+
+on:
+  pull_request:
+    branches: [ "master" ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate-changelog:
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Fetch master branch
+        run: git fetch origin master:master
+
+      - name: Setup Node.js
+        uses: ./.github/actions/node/set-up-node
+
+      - name: Install changelog validator
+        run: |
+          # Install Node.js tool for Keep a Changelog validation
+          npm install -g keep-a-changelog
+
+      - name: Validate changelog format
+        run: |
+          echo "Validating CHANGELOG.md format according to Keep a Changelog..."
+
+          # Use keep-a-changelog to validate the changelog format
+          if ! npx keep-a-changelog CHANGELOG.md > /dev/null 2>&1; then
+            echo "❌ CHANGELOG.md is not valid according to Keep a Changelog format"
+            echo "Please ensure your changelog follows the format at https://keepachangelog.com"
+            echo "Validation output:"
+            npx keep-a-changelog CHANGELOG.md
+            exit 1
+          fi
+
+          echo "✅ CHANGELOG.md format is valid"
+
+      - name: Check version bump
+        run: |
+          echo "Checking if VERSION has been bumped..."
+
+          # Get version from master branch
+          MASTER_VERSION=$(git show master:VERSION | tr -d '[:space:]')
+          echo "Version on master: $MASTER_VERSION"
+
+          # Get version from PR branch
+          PR_VERSION=$(cat VERSION | tr -d '[:space:]')
+          echo "Version in PR: $PR_VERSION"
+
+          # Compare versions
+          if [ "$MASTER_VERSION" = "$PR_VERSION" ]; then
+            echo "❌ Version has not been bumped!"
+            echo "Current version on master: $MASTER_VERSION"
+            echo "Please update the VERSION file with a new version number"
+            exit 1
+          fi
+
+          echo "✅ Version has been bumped from $MASTER_VERSION to $PR_VERSION"
+
+          # Store PR version for next step
+          echo "PR_VERSION=$PR_VERSION" >> $GITHUB_ENV
+
+      - name: Verify changelog entry for new version
+        run: |
+          echo "Checking if CHANGELOG.md contains entry for version $PR_VERSION..."
+
+          # Check if the new version exists in the changelog
+          if ! grep -q "## \[$PR_VERSION\]" CHANGELOG.md; then
+            echo "❌ CHANGELOG.md does not contain an entry for version $PR_VERSION"
+            echo "Please add a changelog entry for the new version"
+            echo ""
+            echo "Expected format:"
+            echo "## [$PR_VERSION] - $(date +%Y-%m-%d)"
+            echo ""
+            echo "### Added"
+            echo "- New features"
+            echo ""
+            echo "### Changed"
+            echo "- Changes in existing functionality"
+            echo ""
+            echo "### Fixed"
+            echo "- Bug fixes"
+            echo ""
+            exit 1
+          fi
+
+          echo "✅ CHANGELOG.md contains entry for version $PR_VERSION"
+
+          # Additional check: ensure the changelog entry has content
+          echo "Checking if the changelog entry has content..."
+
+          # Extract the section for this version
+          awk "/## \[$PR_VERSION\]/,/## \[/" CHANGELOG.md > /tmp/version_section.txt
+
+          # Check if there's at least one section heading (Added, Changed, Deprecated, Removed, Fixed, Security)
+          if ! grep -qE "^### (Added|Changed|Deprecated|Removed|Fixed|Security)" /tmp/version_section.txt; then
+            echo "⚠️  Warning: Version $PR_VERSION entry appears to have no content sections"
+            echo "Consider adding at least one section (Added, Changed, Fixed, etc.) with relevant changes"
+          else
+            echo "✅ Version $PR_VERSION entry has content"
+          fi
+
+      - name: Check semantic versioning
+        run: |
+          echo "Validating semantic versioning..."
+
+          # Function to validate semver format
+          validate_semver() {
+            if [[ $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+              return 0
+            else
+              return 1
+            fi
+          }
+
+          if ! validate_semver "$PR_VERSION"; then
+            echo "❌ Version $PR_VERSION does not follow semantic versioning"
+            echo "Please use format: MAJOR.MINOR.PATCH (e.g., 1.2.3)"
+            echo "Optional: pre-release and build metadata (e.g., 1.2.3-beta.1+build.123)"
+            exit 1
+          fi
+
+          echo "✅ Version $PR_VERSION follows semantic versioning"
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "## ✅ All changelog checks passed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ CHANGELOG.md format is valid (Keep a Changelog)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Version has been bumped to $PR_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ CHANGELOG.md contains entry for version $PR_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Version follows semantic versioning" >> $GITHUB_STEP_SUMMARY

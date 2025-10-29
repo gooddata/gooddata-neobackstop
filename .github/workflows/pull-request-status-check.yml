@@ -1,0 +1,79 @@
+name: Pull request ~ status check
+
+on:
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  check-dependencies-changed:
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      changed: ${{ steps.filter.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            changed:
+              - 'go.sum'
+
+  docker-build:
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag neobackstop:${{ github.sha }} \
+            --tag neobackstop:latest \
+            .
+
+      - name: Build summary
+        run: |
+          echo "### Docker Build Successful ✅" >> $GITHUB_STEP_SUMMARY
+          echo "Built image with tags:" >> $GITHUB_STEP_SUMMARY
+          echo "- neobackstop:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- neobackstop:latest" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Platforms: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+
+  fossa-scan:
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+    name: fossa-scan
+    needs: check-dependencies-changed
+    if: ${{ needs.check-dependencies-changed.outputs.changed == 'true' }}
+    uses: ./.github/workflows/rw-fossa.yml
+    secrets: inherit
+
+  status-check-stage:
+    name: status-check-stage
+    if: ${{ !cancelled() }}
+    needs:
+      - docker-build
+      - fossa-scan
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          allowed-skips: ${{ toJSON(needs) }}
+          jobs: ${{ toJSON(needs) }}

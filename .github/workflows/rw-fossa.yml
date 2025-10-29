@@ -1,0 +1,31 @@
+name: rw ~ fossa ~ scan projects
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: false
+        description: "branch to use in fossa project (master, HEAD, ...)"
+        type: string
+        default: HEAD
+
+jobs:
+  scan:
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: fossas/fossa-action@main
+        with:
+          api-key: ${{secrets.FOSSA_API_KEY}}
+          run-tests: false
+          branch: ${{inputs.branch}}
+      - uses: fossas/fossa-action@main
+        with:
+          api-key: ${{secrets.FOSSA_API_KEY}}
+          run-tests: true
