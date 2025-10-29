@@ -10,6 +10,7 @@ jobs:
     runs-on:
       group: infra1-runners-arc
       labels: runners-small
+    if: ${{ !cancelled() && !contains(github.event.pull_request.labels.*.name, 'skip publish')}}
 
     steps:
       - name: Checkout PR branch
@@ -139,3 +140,18 @@ jobs:
           echo "- ✅ Version has been bumped to $PR_VERSION" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ CHANGELOG.md contains entry for version $PR_VERSION" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Version follows semantic versioning" >> $GITHUB_STEP_SUMMARY
+
+  status-check-stage-verify-changelog:
+    name: status-check-stage-verify-changelog
+    if: ${{ !cancelled() }}
+    needs:
+      - validate-changelog
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          allowed-skips: ${{ toJSON(needs) }}
+          jobs: ${{ toJSON(needs) }}

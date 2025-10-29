@@ -5,6 +5,52 @@ on:
     branches: ["master"]
 
 jobs:
+  check-pr-labels:
+    name: Check PR Labels
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      skip_publish: ${{ steps.check_labels.outputs.skip_publish }}
+    steps:
+      - name: Get PR number and check labels
+        id: check_labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Find PR associated with this commit
+            const commit_sha = context.sha;
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: commit_sha
+            });
+            
+            let skipPublish = false;
+            
+            if (prs.length > 0) {
+              const pr = prs[0];
+              console.log(`Found PR #${pr.number} associated with commit ${commit_sha}`);
+              
+              // Check if PR has "skip publish" label
+              const hasSkipPublishLabel = pr.labels.some(label => label.name === 'skip publish');
+              
+              if (hasSkipPublishLabel) {
+                console.log('PR has "skip publish" label - publishing will be skipped');
+                skipPublish = true;
+              } else {
+                console.log('PR does not have "skip publish" label - proceeding with publish');
+              }
+            } else {
+              console.log('No PR found for this commit - proceeding with publish');
+            }
+            
+            core.setOutput('skip_publish', skipPublish);
+
   check-dependencies-changed:
     runs-on:
       group: infra1-runners-arc
@@ -40,6 +86,8 @@ jobs:
     runs-on:
       group: infra1-runners-arc
       labels: runners-small
+    needs: check-pr-labels
+    if: ${{ needs.check-pr-labels.outputs.skip_publish != 'true' }}
     environment: public-release
     permissions:
       contents: read
@@ -100,6 +148,8 @@ jobs:
     runs-on:
       group: infra1-runners-arc
       labels: runners-small
+    needs: check-pr-labels
+    if: ${{ needs.check-pr-labels.outputs.skip_publish != 'true' }}
     permissions:
       contents: write
     steps:
@@ -272,7 +322,8 @@ jobs:
     runs-on:
       group: infra1-runners-arc
       labels: runners-small
-    needs: [docker-build-and-publish, create-git-tag, extract-changelog]
+    needs: [check-pr-labels, docker-build-and-publish, create-git-tag, extract-changelog]
+    if: ${{ needs.check-pr-labels.outputs.skip_publish != 'true' }}
     permissions:
       contents: write
     steps:
