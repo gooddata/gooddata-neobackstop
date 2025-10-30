@@ -408,3 +408,99 @@ jobs:
           echo "**Docker Image:** \`gooddata/gooddata-neobackstop:${VERSION}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "[View Release](https://github.com/${{ github.repository }}/releases/tag/v${VERSION})" >> $GITHUB_STEP_SUMMARY
+
+  trigger-go-proxy:
+    name: Trigger Go Proxy Update
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    needs: [check-pr-labels, create-git-tag]
+    if: ${{ needs.check-pr-labels.outputs.skip_publish != 'true' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read VERSION file
+        id: version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Will trigger Go proxy for version: v${VERSION}"
+
+      - name: Trigger Go proxy to fetch new version
+        id: trigger_proxy
+        run: |
+          VERSION="v${{ steps.version.outputs.VERSION }}"
+          URL="https://proxy.golang.org/github.com/gooddata/gooddata-neobackstop/@v/${VERSION}.info"
+
+          echo "Triggering Go proxy to fetch version ${VERSION}..."
+          echo "Request URL: ${URL}"
+          echo ""
+
+          # Make the GET request and capture response
+          HTTP_STATUS=$(curl -s -o /tmp/response.txt -w "%{http_code}" "${URL}")
+
+          echo "HTTP Status Code: ${HTTP_STATUS}"
+          echo "Response content:"
+          cat /tmp/response.txt
+          echo ""
+
+          # Check if status is 200
+          if [ "${HTTP_STATUS}" -eq 200 ]; then
+            echo "✅ Success: Go proxy successfully fetched version ${VERSION}"
+
+            # Parse the JSON response if it's valid
+            if command -v jq >/dev/null 2>&1; then
+              if jq -e . /tmp/response.txt >/dev/null 2>&1; then
+                echo ""
+                echo "Version info from proxy:"
+                jq . /tmp/response.txt
+              fi
+            fi
+
+            echo "### Go Proxy Update Triggered Successfully ✅" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Module:** \`github.com/gooddata/gooddata-neobackstop\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** \`${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The module is now available at:" >> $GITHUB_STEP_SUMMARY
+            echo "- [pkg.go.dev](https://pkg.go.dev/github.com/gooddata/gooddata-neobackstop@${VERSION})" >> $GITHUB_STEP_SUMMARY
+            echo "- [Go Proxy](${URL})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Error: Failed to trigger Go proxy update"
+            echo "Expected HTTP status 200, got ${HTTP_STATUS}"
+
+            echo "### Go Proxy Update Failed ❌" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**HTTP Status:** ${HTTP_STATUS}" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** ${VERSION}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The Go proxy could not fetch the new version. This might happen if:" >> $GITHUB_STEP_SUMMARY
+            echo "- The repository is private" >> $GITHUB_STEP_SUMMARY
+            echo "- The git tag hasn't propagated yet" >> $GITHUB_STEP_SUMMARY
+            echo "- There's an issue with the module path" >> $GITHUB_STEP_SUMMARY
+
+            # Exit with failure
+            exit 1
+          fi
+
+      - name: Verify module availability
+        run: |
+          VERSION="v${{ steps.version.outputs.VERSION }}"
+          MODULE="github.com/gooddata/gooddata-neobackstop@${VERSION}"
+
+          echo "Verifying module availability..."
+          echo "Checking: ${MODULE}"
+
+          # Additional verification using go list (if Go is available)
+          if command -v go >/dev/null 2>&1; then
+            echo ""
+            echo "Attempting to verify with go list..."
+            if go list -m "${MODULE}" 2>/dev/null; then
+              echo "✅ Module is available via go toolchain"
+            else
+              echo "⚠️  Module not yet available via go toolchain (may take a few minutes to propagate)"
+            fi
+          fi
