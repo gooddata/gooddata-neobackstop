@@ -18,6 +18,9 @@ RUN CGO_ENABLED=0 \
     GOARCH=${TARGETARCH} \
     go build -o bin .
 
+# Install Playwright drivers during build
+RUN GOOS=linux GOARCH=${TARGETARCH} go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps chromium firefox
+
 # Stage 2: Run the app
 FROM 020413372491.dkr.ecr.us-east-1.amazonaws.com/pullthrough/docker.io/library/debian:bookworm-slim
 WORKDIR /
@@ -56,6 +59,9 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p /usr/neobackstop/app
 COPY --from=builder /app/bin /usr/neobackstop/app/bin
 COPY --from=builder /app/html_report_assets /usr/neobackstop/app/html_report_assets
+
+# Copy Playwright browsers from builder stage
+COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
 
 ENV ENVIRONMENT=PROD
 
