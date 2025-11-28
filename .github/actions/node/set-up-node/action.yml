@@ -18,8 +18,8 @@ runs:
       env:
         RUNS_ON_S3_BUCKET_CACHE: gdc-github-cache
       with:
-          path: /home/runner/_work/_tool/node/22.13.0/
-          key: node-22.13.0-cache
+        path: /home/runner/_work/_tool/node/22.13.0/
+        key: node-22.13.0-cache
 
     # Prepare node
     - name: Install Node.js

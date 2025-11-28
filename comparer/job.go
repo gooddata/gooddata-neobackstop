@@ -1,9 +1,10 @@
 package comparer
 
 import (
+	"os"
+
 	"github.com/gooddata/gooddata-neobackstop/config"
 	"github.com/gooddata/gooddata-neobackstop/screenshotter"
-	"os"
 )
 
 func doJob(c config.Config, job screenshotter.Result, results chan Result) {

@@ -2,10 +2,11 @@ package comparer
 
 import (
 	"fmt"
-	"github.com/gooddata/gooddata-neobackstop/config"
-	"github.com/gooddata/gooddata-neobackstop/screenshotter"
 	"strconv"
 	"sync"
+
+	"github.com/gooddata/gooddata-neobackstop/config"
+	"github.com/gooddata/gooddata-neobackstop/screenshotter"
 )
 
 func Run(c config.Config, jobs chan screenshotter.Result, wg *sync.WaitGroup, results chan Result, id int) {

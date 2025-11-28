@@ -2,7 +2,7 @@ name: Push ~ post merge phase
 
 on:
   push:
-    branches: ["master"]
+    branches: [ "master" ]
 
 jobs:
   check-pr-labels:
@@ -35,10 +35,10 @@ jobs:
             if (prs.length > 0) {
               const pr = prs[0];
               console.log(`Found PR #${pr.number} associated with commit ${commit_sha}`);
-              
+            
               // Check if PR has "skip publish" label
               const hasSkipPublishLabel = pr.labels.some(label => label.name === 'skip publish');
-              
+            
               if (hasSkipPublishLabel) {
                 console.log('PR has "skip publish" label - publishing will be skipped');
                 skipPublish = true;
@@ -322,7 +322,7 @@ jobs:
     runs-on:
       group: infra1-runners-arc
       labels: runners-small
-    needs: [check-pr-labels, docker-build-and-publish, create-git-tag, extract-changelog]
+    needs: [ check-pr-labels, docker-build-and-publish, create-git-tag, extract-changelog ]
     if: ${{ needs.check-pr-labels.outputs.skip_publish != 'true' }}
     permissions:
       contents: write
@@ -414,7 +414,7 @@ jobs:
     runs-on:
       group: infra1-runners-arc
       labels: runners-small
-    needs: [check-pr-labels, create-git-tag]
+    needs: [ check-pr-labels, create-git-tag ]
     if: ${{ needs.check-pr-labels.outputs.skip_publish != 'true' }}
     permissions:
       contents: read
