@@ -1,6 +1,7 @@
 package scenario
 
 import (
+	"github.com/gooddata/gooddata-neobackstop/browser"
 	"github.com/gooddata/gooddata-neobackstop/viewport"
 )
 
@@ -11,6 +12,7 @@ type KeyPressSelector struct {
 
 // Scenario - properties in order of processing, scenarios.json must be an array of Scenario
 type Scenario struct {
+	Browsers            []browser.Browser   `json:"browsers"`
 	Viewports           []viewport.Viewport `json:"viewports"`
 	Id                  string              `json:"id"`
 	Label               string              `json:"label"`
