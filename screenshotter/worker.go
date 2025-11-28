@@ -17,7 +17,7 @@ type CurrentContext struct {
 	ViewportHeight int
 }
 
-func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs chan internals.Scenario, wg *sync.WaitGroup, results chan Result, id int) {
+func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs chan internals.Scenario, headless bool, wg *sync.WaitGroup, results chan Result, id int) {
 	defer wg.Done()
 
 	logPrefix := "screenshotter-" + strconv.Itoa(id) + " |"
@@ -51,7 +51,7 @@ func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs cha
 			var err error // init here so we can directly assign to `b`
 			if job.Browser == browser.Chromium {
 				b, err = pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-					Headless: playwright.Bool(true),
+					Headless: &headless,
 					Args:     conf.Args,
 				})
 				if err != nil {
@@ -59,7 +59,7 @@ func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs cha
 				}
 			} else if job.Browser == browser.Firefox {
 				b, err = pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{
-					Headless: playwright.Bool(true),
+					Headless: &headless,
 					Args:     conf.Args,
 				})
 				if err != nil {
