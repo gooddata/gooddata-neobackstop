@@ -124,7 +124,7 @@ func main() {
 
 	for w := 1; w <= configuration.AsyncCaptureLimit; w++ {
 		wg1.Add(1)
-		go screenshotter.Run(screenshotterSaveDir, pw, configuration, screenshotterJobs, &wg1, screenshotterResults, w)
+		go screenshotter.Run(screenshotterSaveDir, pw, configuration, screenshotterJobs, true, &wg1, screenshotterResults, w)
 	}
 
 	// send jobs and close
