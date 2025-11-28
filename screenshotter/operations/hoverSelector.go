@@ -2,7 +2,6 @@ package operations
 
 import (
 	"github.com/gooddata/gooddata-neobackstop/internals"
-
 	"github.com/playwright-community/playwright-go"
 )
 

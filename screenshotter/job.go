@@ -2,12 +2,12 @@ package screenshotter
 
 import (
 	"fmt"
-	"github.com/gooddata/gooddata-neobackstop/internals"
-	"github.com/gooddata/gooddata-neobackstop/screenshotter/operations"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/gooddata/gooddata-neobackstop/internals"
+	"github.com/gooddata/gooddata-neobackstop/screenshotter/operations"
 	"github.com/playwright-community/playwright-go"
 )
 

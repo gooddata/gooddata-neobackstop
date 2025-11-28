@@ -2,13 +2,13 @@ package screenshotter
 
 import (
 	"fmt"
-	"github.com/gooddata/gooddata-neobackstop/browser"
-	"github.com/gooddata/gooddata-neobackstop/config"
-	"github.com/gooddata/gooddata-neobackstop/internals"
 	"log"
 	"strconv"
 	"sync"
 
+	"github.com/gooddata/gooddata-neobackstop/browser"
+	"github.com/gooddata/gooddata-neobackstop/config"
+	"github.com/gooddata/gooddata-neobackstop/internals"
 	"github.com/playwright-community/playwright-go"
 )
 

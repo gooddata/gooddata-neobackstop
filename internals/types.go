@@ -1,9 +1,10 @@
 package internals
 
 import (
+	"time"
+
 	"github.com/gooddata/gooddata-neobackstop/browser"
 	"github.com/gooddata/gooddata-neobackstop/viewport"
-	"time"
 )
 
 type Delay struct {
