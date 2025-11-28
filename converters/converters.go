@@ -2,12 +2,13 @@ package converters
 
 import (
 	"fmt"
+	"sort"
+	"time"
+
 	"github.com/gooddata/gooddata-neobackstop/browser"
 	"github.com/gooddata/gooddata-neobackstop/internals"
 	"github.com/gooddata/gooddata-neobackstop/scenario"
 	"github.com/gooddata/gooddata-neobackstop/viewport"
-	"sort"
-	"time"
 )
 
 func convertSelectorWithBeforeAfterDelay(selectors []interface{}) []internals.SelectorWithBeforeAfterDelay {
@@ -141,15 +142,29 @@ func scenarioToInternal(b browser.Browser, v viewport.Viewport, s scenario.Scena
 func ScenariosToInternal(browsers []browser.Browser, viewports []viewport.Viewport, scenarios []scenario.Scenario) []internals.Scenario {
 	output := make([]internals.Scenario, 0) // we could pre-calculate this, but until we do multi-browser testing, it's not worth it
 
-	for _, b := range browsers {
-		for _, s := range scenarios {
-			if s.Viewports == nil {
-				for _, v := range viewports {
-					output = append(output, scenarioToInternal(b, v, s))
+	for _, s := range scenarios {
+		if s.Browsers == nil {
+			for _, b := range browsers {
+				if s.Viewports == nil {
+					for _, v := range viewports {
+						output = append(output, scenarioToInternal(b, v, s))
+					}
+				} else {
+					for _, v := range s.Viewports {
+						output = append(output, scenarioToInternal(b, v, s))
+					}
 				}
-			} else {
-				for _, v := range s.Viewports {
-					output = append(output, scenarioToInternal(b, v, s))
+			}
+		} else {
+			for _, b := range s.Browsers {
+				if s.Viewports == nil {
+					for _, v := range viewports {
+						output = append(output, scenarioToInternal(b, v, s))
+					}
+				} else {
+					for _, v := range s.Viewports {
+						output = append(output, scenarioToInternal(b, v, s))
+					}
 				}
 			}
 		}
