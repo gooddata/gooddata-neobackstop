@@ -52,7 +52,7 @@ func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs cha
 			if job.Browser == browser.Chromium {
 				b, err = pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
 					Headless: playwright.Bool(true),
-					Args:     conf.Args,
+					Args:     conf.Args[browser.Chromium],
 				})
 				if err != nil {
 					log.Panicf("could not launch browser: %v", err)
@@ -60,7 +60,7 @@ func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs cha
 			} else if job.Browser == browser.Firefox {
 				b, err = pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{
 					Headless: playwright.Bool(true),
-					Args:     conf.Args,
+					Args:     conf.Args[browser.Firefox],
 				})
 				if err != nil {
 					log.Panicf("could not launch browser: %v", err)
