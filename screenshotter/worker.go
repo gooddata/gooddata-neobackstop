@@ -44,6 +44,7 @@ func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs cha
 				panic(err.Error())
 			}
 			currentBrowser = nil
+			currentContext = nil
 		}
 
 		// if no browser is launched, launch one
