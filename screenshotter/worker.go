@@ -17,7 +17,7 @@ type CurrentContext struct {
 	ViewportHeight int
 }
 
-func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs chan internals.Scenario, wg *sync.WaitGroup, results chan Result, id int) {
+func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs chan internals.Scenario, wg *sync.WaitGroup, results chan Result, id int, mode string) {
 	defer wg.Done()
 
 	logPrefix := "screenshotter-" + strconv.Itoa(id) + " |"
@@ -109,7 +109,7 @@ func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs cha
 			}
 		}
 
-		Job(saveDir, job.Viewport.Label, p, job, results, false)
+		Job(saveDir, job.Viewport.Label, p, job, results, false, mode, conf)
 	}
 
 	// if no jobs, we need this case (or jobs < workers)

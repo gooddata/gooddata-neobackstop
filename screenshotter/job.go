@@ -3,11 +3,14 @@ package screenshotter
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/gooddata/gooddata-neobackstop/config"
 	"github.com/gooddata/gooddata-neobackstop/internals"
 	"github.com/gooddata/gooddata-neobackstop/screenshotter/operations"
+	"github.com/gooddata/gooddata-neobackstop/utils"
 	"github.com/playwright-community/playwright-go"
 )
 
@@ -15,7 +18,7 @@ func cleanText(text string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(text, " ", "_"), "/", "_"), ",", "_")
 }
 
-func Job(saveDir string, viewportLabel string, page playwright.Page, job internals.Scenario, results chan Result, debugMode bool) {
+func Job(saveDir string, viewportLabel string, page playwright.Page, job internals.Scenario, results chan Result, debugMode bool, mode string, conf config.Config) {
 	if _, err := page.Goto(job.Url, playwright.PageGotoOptions{
 		WaitUntil: playwright.WaitUntilStateNetworkidle,
 	}); err != nil {
@@ -143,19 +146,94 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 	safeCombinedName := job.Id + "_0_document_0_" + cleanText(viewportLabel)
 	fileName := "storybook_" + string(job.Browser) + "_" + safeCombinedName + ".png"
 
-	results <- buildResultFromScenario(job, &fileName, nil)
-
 	t1 := time.Now()
 
-	filePath := saveDir + "/" + fileName
+	if mode == "test" {
+		// in test mode: capture to memory and compare immediately
+		fmt.Println("Capturing screenshot to memory")
+		screenshotBytes, err := takeStableScreenshot(page, nil, job.Viewport)
+		if err != nil {
+			log.Panicf("could not take screenshot: %v", err)
+		}
+		fmt.Println("capture took", time.Since(t1))
 
-	fmt.Println("Saving", filePath)
-	err = takeStableScreenshot(page, filePath, job.Viewport)
-	if err != nil {
-		log.Panicf("could not take screenshot: %v", err)
+		var preComputedMatch *bool
+		var preComputedMismatch *float64
+		var preComputedHasRef *bool
+		referencePath := conf.BitmapsReferencePath + "/" + fileName
+
+		if _, err := os.Stat(referencePath); err == nil {
+			// reference exists, compare immediately
+			preComputedHasRef = new(bool)
+			*preComputedHasRef = true
+
+			referenceImg, err := utils.LoadImage(referencePath)
+			if err != nil {
+				log.Panicf("could not load reference image: %v", err)
+			}
+
+			testImg, err := utils.DecodeImageFromBytes(screenshotBytes)
+			if err != nil {
+				log.Panicf("could not decode screenshot: %v", err)
+			}
+
+			_, mismatch := utils.DiffImagesPink(referenceImg, testImg)
+			preComputedMismatch = &mismatch
+
+			matches := (job.MisMatchThreshold != nil && *job.MisMatchThreshold >= mismatch) ||
+				(job.MisMatchThreshold == nil && mismatch == 0)
+			preComputedMatch = &matches
+
+			if matches {
+				if conf.HtmlReport.ShowSuccessfulTests {
+					testPath := conf.BitmapsTestPath + "/" + fileName
+					err = os.WriteFile(testPath, screenshotBytes, 0644)
+					if err != nil {
+						log.Panicf("could not save test screenshot: %v", err)
+					}
+					fmt.Printf("Screenshot matches reference (%.2f%% mismatch), saved for HTML report\n", mismatch)
+				} else {
+					fmt.Printf("Screenshot matches reference (%.2f%% mismatch), freeing memory\n", mismatch)
+				}
+			} else {
+				// mismatch detected - save to disk immediately and free memory
+				fmt.Printf("Screenshot mismatch detected (%.2f%%), saving to disk and freeing memory\n", mismatch)
+				testPath := conf.BitmapsTestPath + "/" + fileName
+				err = os.WriteFile(testPath, screenshotBytes, 0644)
+				if err != nil {
+					log.Panicf("could not save test screenshot: %v", err)
+				}
+			}
+		} else if os.IsNotExist(err) {
+			// reference doesn't exist - save to disk immediately and free memory
+			fmt.Println("Reference image does not exist, saving to disk and freeing memory")
+			preComputedHasRef = new(bool)
+			*preComputedHasRef = false
+			testPath := conf.BitmapsTestPath + "/" + fileName
+			err = os.WriteFile(testPath, screenshotBytes, 0644)
+			if err != nil {
+				log.Panicf("could not save test screenshot: %v", err)
+			}
+		} else {
+			log.Panicf("could not check reference image: %v", err)
+		}
+
+		result := buildResultFromScenario(job, &fileName, nil)
+		result.PreComputedMatch = preComputedMatch
+		result.PreComputedMismatchPercentage = preComputedMismatch
+		result.PreComputedHasReference = preComputedHasRef
+		results <- result
+	} else {
+		// In approve mode: save to disk (existing behavior)
+		results <- buildResultFromScenario(job, &fileName, nil)
+		filePath := saveDir + "/" + fileName
+		fmt.Println("Saving", filePath)
+		_, err = takeStableScreenshot(page, &filePath, job.Viewport)
+		if err != nil {
+			log.Panicf("could not take screenshot: %v", err)
+		}
+		fmt.Println("saving took", time.Since(t1))
 	}
-
-	fmt.Println("saving took", time.Since(t1))
 
 	// Move mouse outside viewport to clear any hover states
 	if job.HoverSelector != nil || job.HoverSelectors != nil || job.ClickSelector != nil || job.ClickSelectors != nil {
