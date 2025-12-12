@@ -18,7 +18,7 @@ func cleanText(text string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(text, " ", "_"), "/", "_"), ",", "_")
 }
 
-func Job(saveDir string, viewportLabel string, page playwright.Page, job internals.Scenario, results chan Result, debugMode bool, mode string, conf config.Config) {
+func Job(logPrefix string, saveDir string, viewportLabel string, page playwright.Page, job internals.Scenario, results chan Result, mode string, conf config.Config) {
 	if _, err := page.Goto(job.Url, playwright.PageGotoOptions{
 		WaitUntil: playwright.WaitUntilStateNetworkidle,
 	}); err != nil {
@@ -30,7 +30,7 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 	// readySelector
 	sErr := operations.ReadySelector(page, job.ReadySelector)
 	if sErr != nil {
-		fmt.Println(*sErr + ", exiting quietly without a screenshot")
+		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
 		return
 	}
@@ -38,28 +38,22 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 	// reloadAfterReady
 	sErr = operations.ReloadAfterReady(page, job)
 	if sErr != nil {
-		fmt.Println(*sErr + ", exiting quietly without a screenshot")
+		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
 		return
 	}
 
 	// delay
-	if debugMode {
-		fmt.Println("Sleep start")
-	}
 	if job.Delay != nil {
-		time.Sleep(job.Delay.PostReady + 2*time.Second)
-	} else {
-		time.Sleep(500 * time.Millisecond)
-	}
-	if debugMode {
-		fmt.Println("Sleep end")
+		fmt.Println(logPrefix, "sleep start")
+		time.Sleep(job.Delay.PostReady + 500*time.Millisecond)
+		fmt.Println(logPrefix, "sleep end")
 	}
 
 	// keyPressSelector
 	sErr = operations.KeyPressSelector(page, job)
 	if sErr != nil {
-		fmt.Println(*sErr + ", exiting quietly without a screenshot")
+		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
 		return
 	}
@@ -67,7 +61,7 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 	// hoverSelector
 	sErr = operations.HoverSelector(page, job)
 	if sErr != nil {
-		fmt.Println(*sErr + ", exiting quietly without a screenshot")
+		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
 		return
 	}
@@ -75,7 +69,7 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 	// hoverSelectors
 	sErr = operations.HoverSelectors(page, job)
 	if sErr != nil {
-		fmt.Println(*sErr + ", exiting quietly without a screenshot")
+		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
 		return
 	}
@@ -83,7 +77,7 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 	// clickSelector
 	sErr = operations.ClickSelector(page, job)
 	if sErr != nil {
-		fmt.Println(*sErr + ", exiting quietly without a screenshot")
+		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
 		return
 	}
@@ -91,7 +85,7 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 	// clickSelectors
 	sErr = operations.ClickSelectors(page, job)
 	if sErr != nil {
-		fmt.Println(*sErr + ", exiting quietly without a screenshot")
+		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
 		return
 	}
@@ -99,12 +93,12 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 	// scroll to selector
 	sErr = operations.ScrollToSelector(page, job)
 	if sErr != nil {
-		fmt.Println(*sErr + ", exiting quietly without a screenshot")
+		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
 		return
 	}
 
-	fmt.Println("operations completed in", time.Since(t0))
+	fmt.Println(logPrefix, "operations completed in", time.Since(t0))
 
 	if job.Delay != nil {
 		time.Sleep(job.Delay.PostOperation)
@@ -154,7 +148,7 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 		if err != nil {
 			log.Panicf("could not take screenshot: %v", err)
 		}
-		fmt.Println("capture took", time.Since(t1))
+		fmt.Println(logPrefix, "capture took", time.Since(t1))
 
 		var preComputedMatch *bool
 		var preComputedMismatch *float64
@@ -221,12 +215,12 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 		// In approve mode: save to disk (existing behavior)
 		results <- buildResultFromScenario(job, &fileName, nil)
 		filePath := saveDir + "/" + fileName
-		fmt.Println("Saving", filePath)
+		fmt.Println(logPrefix, "saving", filePath)
 		_, err = takeStableScreenshot(page, &filePath, job.Viewport)
 		if err != nil {
 			log.Panicf("could not take screenshot: %v", err)
 		}
-		fmt.Println("saving took", time.Since(t1))
+		fmt.Println(logPrefix, "saving took", time.Since(t1))
 	}
 
 	// Move mouse outside viewport to clear any hover states

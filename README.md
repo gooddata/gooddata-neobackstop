@@ -226,8 +226,8 @@ func main() {
     }()
 
     // Run the screenshot job with debug mode enabled
-    screenshotter.Job("./debug-output", debugScenario.Viewport.Label,
-        page, *debugScenario, results, true) // true = debug mode
+    screenshotter.Job("debug |", "./debug-output", debugScenario.Viewport.Label,
+        page, *debugScenario, results, true, "test", cfg) // true = debug mode
 
     browser.Close()
     pw.Stop()
