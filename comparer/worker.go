@@ -20,7 +20,7 @@ func Run(c config.Config, jobs chan screenshotter.Result, wg *sync.WaitGroup, re
 	i := 0
 	for job := range jobs {
 		i++
-		fmt.Println(logPrefix, "received job", i)
+		fmt.Println(logPrefix, "received job", i, "("+job.Scenario.Id+")")
 
 		doJob(c, job, results)
 	}

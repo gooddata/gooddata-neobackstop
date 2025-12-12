@@ -35,7 +35,7 @@ func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs cha
 	i := 0
 	for job := range jobs {
 		i++
-		fmt.Println(logPrefix, "received job", i)
+		fmt.Println(logPrefix, "received job", i, "("+job.Id+")")
 
 		// if browser is open and doesn't match job, close it
 		if currentBrowser != nil && *currentBrowser != job.Browser {

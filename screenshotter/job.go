@@ -150,7 +150,6 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 
 	if mode == "test" {
 		// in test mode: capture to memory and compare immediately
-		fmt.Println("Capturing screenshot to memory")
 		screenshotBytes, err := takeStableScreenshot(page, nil, job.Viewport)
 		if err != nil {
 			log.Panicf("could not take screenshot: %v", err)
@@ -191,13 +190,9 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 					if err != nil {
 						log.Panicf("could not save test screenshot: %v", err)
 					}
-					fmt.Printf("Screenshot matches reference (%.2f%% mismatch), saved for HTML report\n", mismatch)
-				} else {
-					fmt.Printf("Screenshot matches reference (%.2f%% mismatch), freeing memory\n", mismatch)
 				}
 			} else {
 				// mismatch detected - save to disk immediately and free memory
-				fmt.Printf("Screenshot mismatch detected (%.2f%%), saving to disk and freeing memory\n", mismatch)
 				testPath := conf.BitmapsTestPath + "/" + fileName
 				err = os.WriteFile(testPath, screenshotBytes, 0644)
 				if err != nil {
@@ -206,7 +201,6 @@ func Job(saveDir string, viewportLabel string, page playwright.Page, job interna
 			}
 		} else if os.IsNotExist(err) {
 			// reference doesn't exist - save to disk immediately and free memory
-			fmt.Println("Reference image does not exist, saving to disk and freeing memory")
 			preComputedHasRef = new(bool)
 			*preComputedHasRef = false
 			testPath := conf.BitmapsTestPath + "/" + fileName
