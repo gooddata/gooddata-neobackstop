@@ -109,7 +109,7 @@ func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs cha
 			}
 		}
 
-		Job(saveDir, job.Viewport.Label, p, job, results, false, mode, conf)
+		Job(logPrefix, saveDir, job.Viewport.Label, p, job, results, mode, conf)
 	}
 
 	// if no jobs, we need this case (or jobs < workers)
