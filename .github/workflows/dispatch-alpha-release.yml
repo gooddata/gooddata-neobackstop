@@ -1,0 +1,64 @@
+name: Dispatch ~ Alpha Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  docker-build-and-publish:
+    name: Build and publish Docker image (Alpha)
+    runs-on:
+      group: infra1-runners-arc
+      labels: runners-small
+    environment: public-release
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate alpha version
+        id: version
+        run: |
+          BASE_VERSION=$(cat VERSION)
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          ALPHA_VERSION="${BASE_VERSION}-alpha.${SHORT_SHA}"
+          echo "ALPHA_VERSION=${ALPHA_VERSION}" >> $GITHUB_OUTPUT
+          echo "Alpha version to be published: ${ALPHA_VERSION}"
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: gooddatatiger
+          password: ${{ secrets.DOCKERHUB_WRITE_TOKEN }}
+
+      - name: Build and push Docker image with alpha tag
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            gooddata/gooddata-neobackstop:${{ steps.version.outputs.ALPHA_VERSION }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build summary
+        run: |
+          echo "### Docker Alpha Image Published Successfully ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** gooddata/gooddata-neobackstop" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** \`${{ steps.version.outputs.ALPHA_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pull Command" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull gooddata/gooddata-neobackstop:${{ steps.version.outputs.ALPHA_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
