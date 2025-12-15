@@ -130,7 +130,7 @@ func scenarioToInternal(b browser.Browser, v viewport.Viewport, s scenario.Scena
 		HoverSelector:       s.HoverSelector,
 		HoverSelectors:      convertSelectorWithBeforeAfterDelay(s.HoverSelectors),
 		ClickSelector:       s.ClickSelector,
-		ClickSelectors:      convertSelectorWithBeforeAfterDelay(s.ClickSelectors),
+		ClickSelectors:      s.ClickSelectors,
 		PostInteractionWait: convertSelectorOrDelay(s.PostInteractionWait),
 		ScrollToSelector:    s.ScrollToSelector,
 		MisMatchThreshold:   s.MisMatchThreshold,
