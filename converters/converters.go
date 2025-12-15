@@ -126,7 +126,7 @@ func scenarioToInternal(b browser.Browser, v viewport.Viewport, s scenario.Scena
 		ReadySelector:       s.ReadySelector,
 		Delay:               s.Delay,
 		ReloadAfterReady:    s.ReloadAfterReady,
-		KeyPressSelector:    (*internals.KeyPressSelector)(s.KeyPressSelector),
+		KeyPressSelector:    s.KeyPressSelector,
 		HoverSelector:       s.HoverSelector,
 		HoverSelectors:      convertSelectorWithBeforeAfterDelay(s.HoverSelectors),
 		ClickSelector:       s.ClickSelector,
