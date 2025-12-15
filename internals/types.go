@@ -4,18 +4,9 @@ import (
 	"time"
 
 	"github.com/gooddata/gooddata-neobackstop/browser"
+	"github.com/gooddata/gooddata-neobackstop/scenario"
 	"github.com/gooddata/gooddata-neobackstop/viewport"
 )
-
-type Delay struct {
-	PostReady     time.Duration `json:"postReady"`
-	PostOperation time.Duration `json:"postOperation"`
-}
-
-type KeyPressSelector struct {
-	KeyPress string `json:"keyPress"`
-	Selector string `json:"selector"`
-}
 
 type SelectorWithBeforeAfterDelay struct {
 	Selector   string         `json:"selector"`
@@ -38,8 +29,8 @@ type Scenario struct {
 	Url                 string                         `json:"url"`
 	ReadySelector       *string                        `json:"readySelector"`
 	ReloadAfterReady    bool                           `json:"reloadAfterReady"`
-	Delay               *Delay                         `json:"delay"`
-	KeyPressSelector    *KeyPressSelector              `json:"keyPressSelector"`
+	Delay               *scenario.Delay                `json:"delay"`
+	KeyPressSelector    *scenario.KeyPressSelector     `json:"keyPressSelector"`
 	HoverSelector       *string                        `json:"hoverSelector"`
 	HoverSelectors      []SelectorWithBeforeAfterDelay `json:"hoverSelectors"`
 	ClickSelector       *string                        `json:"clickSelector"`
