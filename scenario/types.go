@@ -99,6 +99,7 @@ type Scenario struct {
 	Label               string                         `json:"label"`
 	Url                 string                         `json:"url"`
 	ReadySelector       *ReadySelector                 `json:"readySelector"`
+	ReadySelectors      []ReadySelector                `json:"readySelectors"`
 	ReloadAfterReady    bool                           `json:"reloadAfterReady"`
 	Delay               *Delay                         `json:"delay"`
 	KeyPressSelector    *KeyPressSelector              `json:"keyPressSelector"`

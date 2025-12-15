@@ -35,6 +35,14 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 		return
 	}
 
+	// readySelectors
+	sErr = operations.ReadySelectors(page, job.ReadySelectors)
+	if sErr != nil {
+		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
+		results <- buildResultFromScenario(job, nil, sErr)
+		return
+	}
+
 	// reloadAfterReady
 	sErr = operations.ReloadAfterReady(page, job)
 	if sErr != nil {
