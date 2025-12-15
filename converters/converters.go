@@ -17,6 +17,7 @@ func scenarioToInternal(b browser.Browser, v viewport.Viewport, s scenario.Scena
 		Label:               s.Label,
 		Url:                 s.Url,
 		ReadySelector:       s.ReadySelector,
+		ReadySelectors:      s.ReadySelectors,
 		Delay:               s.Delay,
 		ReloadAfterReady:    s.ReloadAfterReady,
 		KeyPressSelector:    s.KeyPressSelector,
