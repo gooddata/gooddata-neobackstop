@@ -23,7 +23,7 @@ type SelectorWithBeforeAfterDelay struct {
 	WaitAfter  *time.Duration `json:"waitAfter"`
 }
 
-type SelectorOrDelay struct {
+type SelectorThenDelay struct {
 	Selector *string        `json:"selector"`
 	Delay    *time.Duration `json:"delay"`
 }
@@ -44,7 +44,7 @@ type Scenario struct {
 	HoverSelectors      []SelectorWithBeforeAfterDelay `json:"hoverSelectors"`
 	ClickSelector       *string                        `json:"clickSelector"`
 	ClickSelectors      []SelectorWithBeforeAfterDelay `json:"clickSelectors"`
-	PostInteractionWait *SelectorOrDelay               `json:"postInteractionWait"`
+	PostInteractionWait *SelectorThenDelay             `json:"postInteractionWait"`
 	ScrollToSelector    *string                        `json:"scrollToSelector"`
 	MisMatchThreshold   *float64                       `json:"misMatchThreshold"`
 }
