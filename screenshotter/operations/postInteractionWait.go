@@ -3,11 +3,11 @@ package operations
 import (
 	"time"
 
-	"github.com/gooddata/gooddata-neobackstop/internals"
+	"github.com/gooddata/gooddata-neobackstop/scenario"
 	"github.com/playwright-community/playwright-go"
 )
 
-func postInteractionWait(page playwright.Page, piw *internals.SelectorThenDelay) *string {
+func postInteractionWait(page playwright.Page, piw *scenario.SelectorThenDelay) *string {
 	if piw != nil {
 		if piw.Selector != nil {
 			// selector, wait for it

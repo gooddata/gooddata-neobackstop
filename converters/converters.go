@@ -1,51 +1,13 @@
 package converters
 
 import (
-	"fmt"
 	"sort"
-	"time"
 
 	"github.com/gooddata/gooddata-neobackstop/browser"
 	"github.com/gooddata/gooddata-neobackstop/internals"
 	"github.com/gooddata/gooddata-neobackstop/scenario"
 	"github.com/gooddata/gooddata-neobackstop/viewport"
 )
-
-func convertSelectorOrDelay(value interface{}) *internals.SelectorThenDelay {
-	if value == nil {
-		return nil
-	}
-
-	var sod internals.SelectorThenDelay
-	// check type
-	switch piw := value.(type) {
-	case string:
-		// legacy format: selector
-		sod = internals.SelectorThenDelay{
-			Selector: &piw,
-		}
-	case float64:
-		// legacy format: timeout
-		d := time.Duration(piw) * time.Millisecond
-		sod = internals.SelectorThenDelay{
-			Delay: &d,
-		}
-	case map[string]interface{}:
-		// new format: object with selector, delay
-		if v, ok := piw["selector"].(string); ok {
-			sod.Selector = &v
-		}
-		if v, ok := piw["delay"].(float64); ok {
-			d := time.Duration(v) * time.Millisecond
-			sod.Delay = &d
-		}
-	default:
-		fmt.Println(piw)
-		panic("Unknown PostInteractionWait type")
-	}
-
-	return &sod
-}
 
 func scenarioToInternal(b browser.Browser, v viewport.Viewport, s scenario.Scenario) internals.Scenario {
 	return internals.Scenario{
@@ -62,7 +24,7 @@ func scenarioToInternal(b browser.Browser, v viewport.Viewport, s scenario.Scena
 		HoverSelectors:      s.HoverSelectors,
 		ClickSelector:       s.ClickSelector,
 		ClickSelectors:      s.ClickSelectors,
-		PostInteractionWait: convertSelectorOrDelay(s.PostInteractionWait),
+		PostInteractionWait: s.PostInteractionWait,
 		ScrollToSelector:    s.ScrollToSelector,
 		MisMatchThreshold:   s.MisMatchThreshold,
 	}
