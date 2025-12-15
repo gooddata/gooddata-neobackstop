@@ -11,75 +11,6 @@ import (
 	"github.com/gooddata/gooddata-neobackstop/viewport"
 )
 
-func convertSelectorWithBeforeAfterDelay(selectors []interface{}) []internals.SelectorWithBeforeAfterDelay {
-	if selectors == nil {
-		return nil
-	}
-
-	issTmp := make([]*internals.SelectorWithBeforeAfterDelay, 0) // slice of pointers to make manipulation easier
-
-	var firstTimeout *time.Duration
-	for _, selector := range selectors {
-		switch s := selector.(type) {
-		case string:
-			// legacy format: selector
-			is := internals.SelectorWithBeforeAfterDelay{Selector: s}
-			if firstTimeout != nil {
-				is.WaitBefore = firstTimeout
-				firstTimeout = nil
-			}
-			issTmp = append(issTmp, &is)
-		case float64: // json number fields unmarshalled into interfaces are float64s
-			// legacy format: timeout
-			if len(issTmp) == 0 {
-				d := time.Duration(s) * time.Millisecond
-				if firstTimeout != nil {
-					// starts with multiple timeouts...
-					// corner case but we will handle it anyway
-					d += *firstTimeout
-				}
-				firstTimeout = &d
-			} else {
-				lastIndex := len(issTmp) - 1
-				lastIs := issTmp[lastIndex]
-
-				d := time.Duration(s) * time.Millisecond
-				if lastIs.WaitAfter != nil {
-					// two consecutive delays
-					// another conner case that we will handle
-					d += *lastIs.WaitAfter
-				}
-				lastIs.WaitAfter = &d
-			}
-		case map[string]interface{}:
-			// new format: object with selector, waitBefore, waitAfter
-			is := internals.SelectorWithBeforeAfterDelay{}
-			if v, ok := s["selector"].(string); ok {
-				is.Selector = v
-			}
-			if v, ok := s["waitBefore"].(float64); ok {
-				d := time.Duration(v) * time.Millisecond
-				is.WaitBefore = &d
-			}
-			if v, ok := s["waitAfter"].(float64); ok {
-				d := time.Duration(v) * time.Millisecond
-				is.WaitAfter = &d
-			}
-			issTmp = append(issTmp, &is)
-		default:
-			fmt.Println(selectors)
-			panic("Unknown click/hover selector type")
-		}
-	}
-
-	// convert slice of pointers to regular slice
-	iss := make([]internals.SelectorWithBeforeAfterDelay, len(issTmp))
-	for i, ih := range issTmp {
-		iss[i] = *ih
-	}
-	return iss
-}
-
 func convertSelectorOrDelay(value interface{}) *internals.SelectorThenDelay {
 	if value == nil {
 		return nil
@@ -128,7 +59,7 @@ func scenarioToInternal(b browser.Browser, v viewport.Viewport, s scenario.Scena
 		ReloadAfterReady:    s.ReloadAfterReady,
 		KeyPressSelector:    s.KeyPressSelector,
 		HoverSelector:       s.HoverSelector,
-		HoverSelectors:      convertSelectorWithBeforeAfterDelay(s.HoverSelectors),
+		HoverSelectors:      s.HoverSelectors,
 		ClickSelector:       s.ClickSelector,
 		ClickSelectors:      s.ClickSelectors,
 		PostInteractionWait: convertSelectorOrDelay(s.PostInteractionWait),

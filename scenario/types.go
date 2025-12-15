@@ -74,7 +74,7 @@ type Scenario struct {
 	Delay               *Delay                         `json:"delay"`
 	KeyPressSelector    *KeyPressSelector              `json:"keyPressSelector"`
 	HoverSelector       *string                        `json:"hoverSelector"`
-	HoverSelectors      []interface{}                  `json:"hoverSelectors"`
+	HoverSelectors      []SelectorWithBeforeAfterDelay `json:"hoverSelectors"`
 	ClickSelector       *string                        `json:"clickSelector"`
 	ClickSelectors      []SelectorWithBeforeAfterDelay `json:"clickSelectors"`
 	PostInteractionWait interface{}                    `json:"postInteractionWait"`
