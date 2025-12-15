@@ -22,7 +22,7 @@ func convertSelectorWithBeforeAfterDelay(selectors []interface{}) []internals.Se
 	for _, selector := range selectors {
 		switch s := selector.(type) {
 		case string:
-			// selector
+			// legacy format: selector
 			is := internals.SelectorWithBeforeAfterDelay{Selector: s}
 			if firstTimeout != nil {
 				is.WaitBefore = firstTimeout
@@ -30,7 +30,7 @@ func convertSelectorWithBeforeAfterDelay(selectors []interface{}) []internals.Se
 			}
 			issTmp = append(issTmp, &is)
 		case float64: // json number fields unmarshalled into interfaces are float64s
-			// timeout
+			// legacy format: timeout
 			if len(issTmp) == 0 {
 				d := time.Duration(s) * time.Millisecond
 				if firstTimeout != nil {
@@ -51,6 +51,21 @@ func convertSelectorWithBeforeAfterDelay(selectors []interface{}) []internals.Se
 				}
 				lastIs.WaitAfter = &d
 			}
+		case map[string]interface{}:
+			// new format: object with selector, waitBefore, waitAfter
+			is := internals.SelectorWithBeforeAfterDelay{}
+			if v, ok := s["selector"].(string); ok {
+				is.Selector = v
+			}
+			if v, ok := s["waitBefore"].(float64); ok {
+				d := time.Duration(v) * time.Millisecond
+				is.WaitBefore = &d
+			}
+			if v, ok := s["waitAfter"].(float64); ok {
+				d := time.Duration(v) * time.Millisecond
+				is.WaitAfter = &d
+			}
+			issTmp = append(issTmp, &is)
 		default:
 			fmt.Println(selectors)
 			panic("Unknown click/hover selector type")
@@ -65,24 +80,33 @@ func convertSelectorWithBeforeAfterDelay(selectors []interface{}) []internals.Se
 	return iss
 }
 
-func convertSelectorOrDelay(value interface{}) *internals.SelectorOrDelay {
+func convertSelectorOrDelay(value interface{}) *internals.SelectorThenDelay {
 	if value == nil {
 		return nil
 	}
 
-	var sod internals.SelectorOrDelay
+	var sod internals.SelectorThenDelay
 	// check type
 	switch piw := value.(type) {
 	case string:
-		// selector
-		sod = internals.SelectorOrDelay{
+		// legacy format: selector
+		sod = internals.SelectorThenDelay{
 			Selector: &piw,
 		}
 	case float64:
-		// timeout
+		// legacy format: timeout
 		d := time.Duration(piw) * time.Millisecond
-		sod = internals.SelectorOrDelay{
+		sod = internals.SelectorThenDelay{
 			Delay: &d,
+		}
+	case map[string]interface{}:
+		// new format: object with selector, delay
+		if v, ok := piw["selector"].(string); ok {
+			sod.Selector = &v
+		}
+		if v, ok := piw["delay"].(float64); ok {
+			d := time.Duration(v) * time.Millisecond
+			sod.Delay = &d
 		}
 	default:
 		fmt.Println(piw)

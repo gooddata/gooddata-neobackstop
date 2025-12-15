@@ -7,7 +7,7 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
-func postInteractionWait(page playwright.Page, piw *internals.SelectorOrDelay) *string {
+func postInteractionWait(page playwright.Page, piw *internals.SelectorThenDelay) *string {
 	if piw != nil {
 		if piw.Selector != nil {
 			// selector, wait for it
