@@ -46,7 +46,7 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 	// delay
 	if job.Delay != nil {
 		fmt.Println(logPrefix, "sleep start")
-		time.Sleep(job.Delay.PostReady + 500*time.Millisecond)
+		time.Sleep(job.Delay.PostReady)
 		fmt.Println(logPrefix, "sleep end")
 	}
 
