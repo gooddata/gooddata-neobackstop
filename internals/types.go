@@ -14,7 +14,7 @@ type Scenario struct {
 	Id                  string                                  `json:"id"`
 	Label               string                                  `json:"label"`
 	Url                 string                                  `json:"url"`
-	ReadySelector       *string                                 `json:"readySelector"`
+	ReadySelector       *scenario.ReadySelector                 `json:"readySelector"`
 	ReloadAfterReady    bool                                    `json:"reloadAfterReady"`
 	Delay               *scenario.Delay                         `json:"delay"`
 	KeyPressSelector    *scenario.KeyPressSelector              `json:"keyPressSelector"`
