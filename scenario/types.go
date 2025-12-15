@@ -62,6 +62,29 @@ func (d *SelectorWithBeforeAfterDelay) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type SelectorThenDelay struct {
+	Selector *string        `json:"selector"`
+	Delay    *time.Duration `json:"delay"`
+}
+
+func (d *SelectorThenDelay) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Selector *string  `json:"selector"`
+		Delay    *float64 `json:"delay"`
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	d.Selector = raw.Selector
+	if raw.Delay != nil {
+		t := time.Duration(*raw.Delay) * time.Millisecond
+		d.Delay = &t
+	}
+	return nil
+}
+
 // Scenario - properties in order of processing, scenarios.json must be an array of Scenario
 type Scenario struct {
 	Browsers            []browser.Browser              `json:"browsers"`
@@ -77,7 +100,7 @@ type Scenario struct {
 	HoverSelectors      []SelectorWithBeforeAfterDelay `json:"hoverSelectors"`
 	ClickSelector       *string                        `json:"clickSelector"`
 	ClickSelectors      []SelectorWithBeforeAfterDelay `json:"clickSelectors"`
-	PostInteractionWait interface{}                    `json:"postInteractionWait"`
+	PostInteractionWait *SelectorThenDelay             `json:"postInteractionWait"`
 	ScrollToSelector    *string                        `json:"scrollToSelector"`
 	MisMatchThreshold   *float64                       `json:"misMatchThreshold"`
 }
