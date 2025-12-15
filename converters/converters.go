@@ -92,32 +92,6 @@ func convertSelectorOrDelay(value interface{}) *internals.SelectorOrDelay {
 	return &sod
 }
 
-func convertDelay(value interface{}) *internals.Delay {
-	if value == nil {
-		return nil
-	}
-
-	// todo: update TS type (and usages) to only support new style delay, so that we can remove this function
-	var delay internals.Delay
-	switch d := value.(type) {
-	case float64:
-		// old style delay
-		delay = internals.Delay{
-			PostReady: time.Duration(d) * time.Millisecond,
-		}
-	case map[string]interface{}:
-		// new style delay
-		if v, ok := d["postReady"].(float64); ok {
-			delay.PostReady = time.Duration(v) * time.Millisecond
-		}
-		if v, ok := d["postOperation"].(float64); ok {
-			delay.PostOperation = time.Duration(v) * time.Millisecond
-		}
-	}
-
-	return &delay
-}
-
 func scenarioToInternal(b browser.Browser, v viewport.Viewport, s scenario.Scenario) internals.Scenario {
 	return internals.Scenario{
 		Browser:             b,
@@ -126,7 +100,7 @@ func scenarioToInternal(b browser.Browser, v viewport.Viewport, s scenario.Scena
 		Label:               s.Label,
 		Url:                 s.Url,
 		ReadySelector:       s.ReadySelector,
-		Delay:               convertDelay(s.Delay),
+		Delay:               s.Delay,
 		ReloadAfterReady:    s.ReloadAfterReady,
 		KeyPressSelector:    (*internals.KeyPressSelector)(s.KeyPressSelector),
 		HoverSelector:       s.HoverSelector,
