@@ -1,8 +1,10 @@
 package operations
 
 import (
+	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/gooddata/gooddata-neobackstop/internals"
 	"github.com/playwright-community/playwright-go"
@@ -40,9 +42,11 @@ var validKeyPressKeys = []string{
 	"Shift", // optional, but included
 }
 
-func KeyPressSelector(page playwright.Page, scenario internals.Scenario) *string {
+func KeyPressSelector(logPrefix string, page playwright.Page, scenario internals.Scenario) *string {
 	if scenario.KeyPressSelector != nil {
 		kps := *scenario.KeyPressSelector
+		t0 := time.Now()
+		fmt.Println(logPrefix, "keyPressSelector: waiting for", kps.Selector, "to press", kps.KeyPress)
 
 		// Wait for the element to exist
 		_, err := page.WaitForSelector(kps.Selector, playwright.PageWaitForSelectorOptions{
@@ -52,6 +56,7 @@ func KeyPressSelector(page playwright.Page, scenario internals.Scenario) *string
 			e := "KeyPressSelector " + kps.Selector + " not found"
 			return &e
 		}
+		waitTime := time.Since(t0).Milliseconds()
 
 		isValidKey := false
 		if strings.Contains(kps.KeyPress, "+") {
@@ -63,6 +68,7 @@ func KeyPressSelector(page playwright.Page, scenario internals.Scenario) *string
 			isValidKey = true
 		}
 
+		tPress := time.Now()
 		// if key is pressable
 		if isValidKey {
 			err = page.Press(kps.Selector, kps.KeyPress)
@@ -78,8 +84,10 @@ func KeyPressSelector(page playwright.Page, scenario internals.Scenario) *string
 				return &e
 			}
 		}
+		pressTime := time.Since(tPress).Milliseconds()
+		fmt.Println(logPrefix, "keyPressSelector:", kps.Selector, "key:", kps.KeyPress, "completed in", waitTime+pressTime, "ms (wait:", waitTime, "ms, press:", pressTime, "ms)")
 
-		return postInteractionWait(page, scenario.PostInteractionWait)
+		return postInteractionWait(logPrefix, page, scenario.PostInteractionWait)
 	}
 
 	return nil

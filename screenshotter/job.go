@@ -19,16 +19,19 @@ func cleanText(text string) string {
 }
 
 func Job(logPrefix string, saveDir string, viewportLabel string, page playwright.Page, job internals.Scenario, results chan Result, mode string, conf config.Config) {
+	tTotal := time.Now()
+	tPageLoad := time.Now()
+	fmt.Println(logPrefix, "pageLoad: navigating to", job.Url)
+
 	if _, err := page.Goto(job.Url, playwright.PageGotoOptions{
 		WaitUntil: playwright.WaitUntilStateNetworkidle,
 	}); err != nil {
 		log.Panicf("could not goto: %v", err)
 	}
-
-	t0 := time.Now()
+	fmt.Println(logPrefix, "pageLoad: completed in", time.Since(tPageLoad).Milliseconds(), "ms")
 
 	// readySelector
-	sErr := operations.ReadySelector(page, job.ReadySelector)
+	sErr := operations.ReadySelector(logPrefix, page, job.ReadySelector)
 	if sErr != nil {
 		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
@@ -36,7 +39,7 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 	}
 
 	// readySelectors
-	sErr = operations.ReadySelectors(page, job.ReadySelectors)
+	sErr = operations.ReadySelectors(logPrefix, page, job.ReadySelectors)
 	if sErr != nil {
 		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
@@ -44,22 +47,25 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 	}
 
 	// reloadAfterReady
-	sErr = operations.ReloadAfterReady(page, job)
+	sErr = operations.ReloadAfterReady(logPrefix, page, job)
 	if sErr != nil {
 		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
 		return
 	}
 
+	t0 := time.Now()
+
 	// delay
-	if job.Delay != nil {
-		fmt.Println(logPrefix, "sleep start")
+	if job.Delay != nil && job.Delay.PostReady > 0 {
+		delayMs := job.Delay.PostReady.Milliseconds()
+		fmt.Println(logPrefix, "postReadyDelay: starting sleep for", delayMs, "ms")
 		time.Sleep(job.Delay.PostReady)
-		fmt.Println(logPrefix, "sleep end")
+		fmt.Println(logPrefix, "postReadyDelay: ending sleep for", delayMs, "ms")
 	}
 
 	// keyPressSelector
-	sErr = operations.KeyPressSelector(page, job)
+	sErr = operations.KeyPressSelector(logPrefix, page, job)
 	if sErr != nil {
 		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
@@ -67,7 +73,7 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 	}
 
 	// hoverSelector
-	sErr = operations.HoverSelector(page, job)
+	sErr = operations.HoverSelector(logPrefix, page, job)
 	if sErr != nil {
 		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
@@ -75,7 +81,7 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 	}
 
 	// hoverSelectors
-	sErr = operations.HoverSelectors(page, job)
+	sErr = operations.HoverSelectors(logPrefix, page, job)
 	if sErr != nil {
 		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
@@ -83,7 +89,7 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 	}
 
 	// clickSelector
-	sErr = operations.ClickSelector(page, job)
+	sErr = operations.ClickSelector(logPrefix, page, job)
 	if sErr != nil {
 		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
@@ -91,7 +97,7 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 	}
 
 	// clickSelectors
-	sErr = operations.ClickSelectors(page, job)
+	sErr = operations.ClickSelectors(logPrefix, page, job)
 	if sErr != nil {
 		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
@@ -99,17 +105,20 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 	}
 
 	// scroll to selector
-	sErr = operations.ScrollToSelector(page, job)
+	sErr = operations.ScrollToSelector(logPrefix, page, job)
 	if sErr != nil {
 		fmt.Println(logPrefix, *sErr+", exiting quietly without a screenshot")
 		results <- buildResultFromScenario(job, nil, sErr)
 		return
 	}
 
-	fmt.Println(logPrefix, "operations completed in", time.Since(t0))
+	fmt.Println(logPrefix, "allOperations: completed in", time.Since(t0).Milliseconds(), "ms (incl. load+ready:", time.Since(tTotal).Milliseconds(), "ms)")
 
-	if job.Delay != nil {
+	if job.Delay != nil && job.Delay.PostOperation > 0 {
+		delayMs := job.Delay.PostOperation.Milliseconds()
+		fmt.Println(logPrefix, "postOperationDelay: starting sleep for", delayMs, "ms")
 		time.Sleep(job.Delay.PostOperation)
+		fmt.Println(logPrefix, "postOperationDelay: ending sleep for", delayMs, "ms")
 	}
 
 	_, err := page.Evaluate(`() => {
@@ -149,6 +158,7 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 	fileName := "storybook_" + string(job.Browser) + "_" + safeCombinedName + ".png"
 
 	t1 := time.Now()
+	fmt.Println(logPrefix, "screenshot: capturing")
 
 	if mode == "test" {
 		// in test mode: capture to memory and compare immediately
@@ -156,7 +166,7 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 		if err != nil {
 			log.Panicf("could not take screenshot: %v", err)
 		}
-		fmt.Println(logPrefix, "capture took", time.Since(t1))
+		fmt.Println(logPrefix, "screenshot: captured in", time.Since(t1).Milliseconds(), "ms")
 
 		var preComputedMatch *bool
 		var preComputedMismatch *float64
@@ -223,12 +233,12 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 		// In approve mode: save to disk (existing behavior)
 		results <- buildResultFromScenario(job, &fileName, nil)
 		filePath := saveDir + "/" + fileName
-		fmt.Println(logPrefix, "saving", filePath)
+		fmt.Println(logPrefix, "screenshot: saving to", filePath)
 		_, err = takeStableScreenshot(page, &filePath, job.Viewport)
 		if err != nil {
 			log.Panicf("could not take screenshot: %v", err)
 		}
-		fmt.Println(logPrefix, "saving took", time.Since(t1))
+		fmt.Println(logPrefix, "screenshot: saved in", time.Since(t1).Milliseconds(), "ms")
 	}
 
 	// Move mouse outside viewport to clear any hover states
