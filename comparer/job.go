@@ -1,6 +1,7 @@
 package comparer
 
 import (
+	"image"
 	"os"
 
 	"github.com/gooddata/gooddata-neobackstop/config"
@@ -45,20 +46,35 @@ func doJob(c config.Config, job screenshotter.Result, results chan Result) {
 			panic(err)
 		}
 
-		// Create diff image
-		diff, _ := utils.DiffImagesPink(referenceImg, testImg)
+		// Check dimensions
+		sameDimensions, dimensionDiff := utils.CompareDimensions(referenceImg, testImg)
+
+		// If RequireSameDimensions is enabled and dimensions differ, use bounds-aware diff
+		var diff *image.RGBA
+		if c.RequireSameDimensions && !sameDimensions {
+			diff, _ = utils.DiffImagesPinkWithBounds(referenceImg, testImg)
+		} else {
+			diff, _ = utils.DiffImagesPink(referenceImg, testImg)
+		}
+
 		err = utils.SaveImage(c.BitmapsTestPath+"/diff_"+*job.FileName, diff)
 		if err != nil {
 			panic(err.Error())
 		}
 
-		results <- Result{
+		result := Result{
 			ScreenshotterResult: &job,
 			HasReference:        true,
 			DiffCreated:         true,
 			MatchesReference:    false,
 			MismatchPercentage:  job.PreComputedMismatchPercentage,
 		}
+
+		if c.RequireSameDimensions && !sameDimensions {
+			result.DimensionMismatch = &dimensionDiff
+		}
+
+		results <- result
 		return
 	}
 
@@ -82,6 +98,29 @@ func doJob(c config.Config, job screenshotter.Result, results chan Result) {
 	testImg, err := utils.LoadImage(c.BitmapsTestPath + "/" + *job.FileName)
 	if err != nil {
 		panic(err)
+	}
+
+	// Check dimensions
+	sameDimensions, dimensionDiff := utils.CompareDimensions(referenceImg, testImg)
+
+	// If RequireSameDimensions is enabled and dimensions differ, fail the test
+	if c.RequireSameDimensions && !sameDimensions {
+		// Generate diff with out-of-bounds highlighting
+		diff, mismatch := utils.DiffImagesPinkWithBounds(referenceImg, testImg)
+		err = utils.SaveImage(c.BitmapsTestPath+"/diff_"+*job.FileName, diff)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		results <- Result{
+			ScreenshotterResult: &job,
+			HasReference:        true,
+			DiffCreated:         true,
+			MatchesReference:    false,
+			MismatchPercentage:  &mismatch,
+			DimensionMismatch:   &dimensionDiff,
+		}
+		return
 	}
 
 	diff, mismatch := utils.DiffImagesPink(referenceImg, testImg)
