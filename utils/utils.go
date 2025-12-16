@@ -82,10 +82,50 @@ func DecodeImageFromBytes(data []byte) (image.Image, error) {
 	return img, err
 }
 
+// DimensionDiff holds dimension difference information
+type DimensionDiff struct {
+	WidthDiff  int // positive = test wider, negative = test narrower
+	HeightDiff int // positive = test taller, negative = test shorter
+}
+
+// CompareDimensions checks if two images have the same dimensions
+func CompareDimensions(img1, img2 image.Image) (same bool, diff DimensionDiff) {
+	b1 := img1.Bounds()
+	b2 := img2.Bounds()
+
+	w1, h1 := b1.Dx(), b1.Dy()
+	w2, h2 := b2.Dx(), b2.Dy()
+
+	diff = DimensionDiff{
+		WidthDiff:  w2 - w1,
+		HeightDiff: h2 - h1,
+	}
+
+	same = (w1 == w2) && (h1 == h2)
+	return
+}
+
 // DiffImagesPink compares two images and creates a diff image with pink highlights
+// Only compares the overlapping region (intersection of both bounds)
 func DiffImagesPink(img1, img2 image.Image) (diff *image.RGBA, mismatch float64) {
-	bounds := img1.Bounds()
-	diff = image.NewRGBA(bounds)
+	b1 := img1.Bounds()
+	b2 := img2.Bounds()
+
+	// Calculate intersection bounds (only compare overlapping region)
+	minX := max(b1.Min.X, b2.Min.X)
+	minY := max(b1.Min.Y, b2.Min.Y)
+	maxX := min(b1.Max.X, b2.Max.X)
+	maxY := min(b1.Max.Y, b2.Max.Y)
+
+	// If no overlap, return empty diff
+	if minX >= maxX || minY >= maxY {
+		diff = image.NewRGBA(image.Rect(0, 0, 1, 1))
+		mismatch = 100
+		return
+	}
+
+	intersectBounds := image.Rect(minX, minY, maxX, maxY)
+	diff = image.NewRGBA(intersectBounds)
 
 	var totalPixels int
 	var diffPixels int
@@ -93,8 +133,8 @@ func DiffImagesPink(img1, img2 image.Image) (diff *image.RGBA, mismatch float64)
 	pink := color.RGBA{R: 255, G: 0, B: 255, A: 255} // classic Backstop pink
 	tolerance := 5.0                                 // fixed tolerance
 
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+	for y := minY; y < maxY; y++ {
+		for x := minX; x < maxX; x++ {
 			c1 := color.RGBAModel.Convert(img1.At(x, y)).(color.RGBA)
 			c2 := color.RGBAModel.Convert(img2.At(x, y)).(color.RGBA)
 
@@ -109,6 +149,63 @@ func DiffImagesPink(img1, img2 image.Image) (diff *image.RGBA, mismatch float64)
 				diffPixels++
 			} else {
 				diff.Set(x, y, color.RGBA{}) // transparent if no diff
+			}
+			totalPixels++
+		}
+	}
+
+	mismatch = float64(diffPixels) / float64(totalPixels) * 100
+	return
+}
+
+// DiffImagesPinkWithBounds compares two images and highlights out-of-bounds areas
+// The diff image covers the union of both image bounds
+func DiffImagesPinkWithBounds(img1, img2 image.Image) (diff *image.RGBA, mismatch float64) {
+	b1 := img1.Bounds()
+	b2 := img2.Bounds()
+
+	// Calculate union bounds (covers both images)
+	minX := min(b1.Min.X, b2.Min.X)
+	minY := min(b1.Min.Y, b2.Min.Y)
+	maxX := max(b1.Max.X, b2.Max.X)
+	maxY := max(b1.Max.Y, b2.Max.Y)
+
+	unionBounds := image.Rect(minX, minY, maxX, maxY)
+	diff = image.NewRGBA(unionBounds)
+
+	var totalPixels int
+	var diffPixels int
+
+	pink := color.RGBA{R: 255, G: 0, B: 255, A: 255}   // classic Backstop pink for pixel diff
+	yellow := color.RGBA{R: 255, G: 255, B: 0, A: 255} // yellow for out-of-bounds areas
+	tolerance := 5.0
+
+	for y := minY; y < maxY; y++ {
+		for x := minX; x < maxX; x++ {
+			inImg1 := x >= b1.Min.X && x < b1.Max.X && y >= b1.Min.Y && y < b1.Max.Y
+			inImg2 := x >= b2.Min.X && x < b2.Max.X && y >= b2.Min.Y && y < b2.Max.Y
+
+			if !inImg1 || !inImg2 {
+				// Out of bounds for one of the images - mark as yellow
+				diff.Set(x, y, yellow)
+				diffPixels++
+			} else {
+				// Both images have this pixel - compare normally
+				c1 := color.RGBAModel.Convert(img1.At(x, y)).(color.RGBA)
+				c2 := color.RGBAModel.Convert(img2.At(x, y)).(color.RGBA)
+
+				dr := float64(c1.R) - float64(c2.R)
+				dg := float64(c1.G) - float64(c2.G)
+				db := float64(c1.B) - float64(c2.B)
+
+				dist := math.Sqrt(dr*dr + dg*dg + db*db)
+
+				if dist > tolerance {
+					diff.Set(x, y, pink)
+					diffPixels++
+				} else {
+					diff.Set(x, y, color.RGBA{})
+				}
 			}
 			totalPixels++
 		}
