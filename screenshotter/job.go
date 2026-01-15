@@ -154,6 +154,20 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 		panic(err.Error())
 	}
 
+	_, err = page.AddStyleTag(playwright.PageAddStyleTagOptions{
+		Content: playwright.String(`
+        *, *::before, *::after {
+            transition-duration: 0s !important;
+            transition-delay: 0s !important;
+            animation-duration: 0s !important;
+            animation-delay: 0s !important;
+        }
+    `),
+	})
+	if err != nil {
+		panic(err.Error())
+	}
+
 	safeCombinedName := job.Id + "_0_document_0_" + cleanText(viewportLabel)
 	fileName := "storybook_" + string(job.Browser) + "_" + safeCombinedName + ".png"
 
