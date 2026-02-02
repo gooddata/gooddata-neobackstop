@@ -26,4 +26,5 @@ type Scenario struct {
 	PostInteractionWait *scenario.SelectorThenDelay             `json:"postInteractionWait"`
 	ScrollToSelector    *string                                 `json:"scrollToSelector"`
 	MisMatchThreshold   *float64                                `json:"misMatchThreshold"`
+	RetryCount          int                                     `json:"retryCount"`
 }

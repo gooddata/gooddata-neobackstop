@@ -41,7 +41,7 @@ go get github.com/gooddata/gooddata-neobackstop@latest
 ### Building from Source
 
 Prerequisites:
-- Go 1.25.4 or later
+- Go 1.25.6 or later
 - Playwright browsers (installed automatically on first run)
 
 ```bash
@@ -126,7 +126,7 @@ func main() {
 
     // Convert to internal format
     internalScenarios := converters.ScenariosToInternal(
-        cfg.Browsers, cfg.Viewports, scenarios,
+        cfg.Browsers, cfg.Viewports, cfg.RetryCount, scenarios,
     )
 
     // Install and run Playwright
@@ -192,7 +192,7 @@ func main() {
     json.Unmarshal(scenariosBytes, &scenarios)
 
     internalScenarios := converters.ScenariosToInternal(
-        cfg.Browsers, cfg.Viewports, scenarios,
+        cfg.Browsers, cfg.Viewports, cfg.RetryCount, scenarios,
     )
 
     // Find a specific scenario to debug
@@ -323,7 +323,8 @@ The main configuration file controls browser settings, viewports, output paths, 
         ]
     },
     "asyncCaptureLimit": 2,
-    "asyncCompareLimit": 6
+    "asyncCompareLimit": 6,
+    "retryCount": 0
 }
 ```
 
@@ -342,6 +343,7 @@ The main configuration file controls browser settings, viewports, output paths, 
 | `args`                           | object     | Browser-specific launch arguments          |
 | `asyncCaptureLimit`              | number     | Max concurrent screenshot captures         |
 | `asyncCompareLimit`              | number     | Max concurrent image comparisons           |
+| `retryCount`                     | number     | Extra retries on mismatch in test mode     |
 
 #### Viewport Configuration
 
@@ -376,24 +378,25 @@ Defines the test scenarios - which pages to capture and how to interact with the
 
 #### Scenario Options
 
-| Option                | Type             | Description                                 |
-|-----------------------|------------------|---------------------------------------------|
-| `id`                  | string           | Unique identifier for the scenario          |
-| `label`               | string           | Human-readable label (used in reports)      |
-| `url`                 | string           | URL to navigate to                          |
-| `browsers`            | string[]         | Override global browsers for this scenario  |
-| `viewports`           | Viewport[]       | Override global viewports for this scenario |
-| `readySelector`       | string           | CSS selector to wait for before capture     |
-| `reloadAfterReady`    | boolean          | Reload page after ready selector appears    |
-| `delay`               | number \| object | Wait time after ready (see below)           |
-| `keyPressSelector`    | object           | Element to focus and key to press           |
-| `hoverSelector`       | string           | Single element to hover over                |
-| `hoverSelectors`      | array            | Multiple elements to hover in sequence      |
-| `clickSelector`       | string           | Single element to click                     |
-| `clickSelectors`      | array            | Multiple elements to click in sequence      |
-| `postInteractionWait` | string \| number | Wait after interactions (selector or ms)    |
-| `scrollToSelector`    | string           | Element to scroll into view                 |
-| `misMatchThreshold`   | number           | Allowed mismatch percentage (0-100)         |
+| Option                | Type             | Description                                       |
+|-----------------------|------------------|---------------------------------------------------|
+| `id`                  | string           | Unique identifier for the scenario                |
+| `label`               | string           | Human-readable label (used in reports)            |
+| `url`                 | string           | URL to navigate to                                |
+| `browsers`            | string[]         | Override global browsers for this scenario        |
+| `viewports`           | Viewport[]       | Override global viewports for this scenario       |
+| `readySelector`       | string           | CSS selector to wait for before capture           |
+| `reloadAfterReady`    | boolean          | Reload page after ready selector appears          |
+| `delay`               | number \| object | Wait time after ready (see below)                 |
+| `keyPressSelector`    | object           | Element to focus and key to press                 |
+| `hoverSelector`       | string           | Single element to hover over                      |
+| `hoverSelectors`      | array            | Multiple elements to hover in sequence            |
+| `clickSelector`       | string           | Single element to click                           |
+| `clickSelectors`      | array            | Multiple elements to click in sequence            |
+| `postInteractionWait` | string \| number | Wait after interactions (selector or ms)          |
+| `scrollToSelector`    | string           | Element to scroll into view                       |
+| `misMatchThreshold`   | number           | Allowed mismatch percentage (0-100)               |
+| `retryCount`          | number           | Extra retries for the scenario (overrides global) |
 
 ## Scenario Examples
 

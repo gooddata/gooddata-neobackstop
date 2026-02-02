@@ -12,4 +12,5 @@ type Result struct {
 	MatchesReference   *bool              `json:"matches_reference"`
 	DiffFileName       *string            `json:"diff_file_name"`
 	MisMatchPercentage *float64           `json:"misMatchPercentage"`
+	RetriesUsed        *int               `json:"retriesUsed,omitempty"`
 }

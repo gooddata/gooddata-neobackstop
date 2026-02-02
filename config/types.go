@@ -21,4 +21,5 @@ type Config struct {
 	AsyncCaptureLimit     int                          `json:"asyncCaptureLimit"`
 	AsyncCompareLimit     int                          `json:"asyncCompareLimit"`
 	RequireSameDimensions bool                         `json:"requireSameDimensions"`
+	RetryCount            int                          `json:"retryCount"`
 }
