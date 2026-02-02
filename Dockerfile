@@ -1,3 +1,18 @@
+# Stage 0: Build the base go system with playwright drivers
+FROM 020413372491.dkr.ecr.us-east-1.amazonaws.com/pullthrough/docker.io/library/golang:1.25.4-bookworm AS basesystem
+WORKDIR /
+
+# Install CA certs & dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    gnupg \
+    && update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Playwright drivers
+RUN GOOS=linux GOARCH=${TARGETARCH} go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps chromium firefox
+
 # Stage 1: Build the Go app
 FROM 020413372491.dkr.ecr.us-east-1.amazonaws.com/pullthrough/docker.io/library/golang:1.25.4-bookworm AS builder
 WORKDIR /app
@@ -19,20 +34,7 @@ RUN CGO_ENABLED=0 \
     go build -o bin .
 
 # Stage 2: Run the app
-FROM 020413372491.dkr.ecr.us-east-1.amazonaws.com/pullthrough/docker.io/library/golang:1.25.4-bookworm
-WORKDIR /
-
-# Install CA certs & dependencies
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    curl \
-    gnupg \
-    && update-ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install Playwright drivers
-RUN GOOS=linux GOARCH=${TARGETARCH} go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps chromium firefox
-
+FROM basesystem
 # Copy the built Go app binary and the html_report_assets which are needed at runtime
 RUN mkdir -p /usr/neobackstop/app
 COPY --from=builder /app/bin /usr/neobackstop/app/bin
