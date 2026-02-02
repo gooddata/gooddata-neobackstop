@@ -94,7 +94,7 @@ func main() {
 	}
 
 	// build internal scenarios
-	internalScenarios := converters.ScenariosToInternal(configuration.Browsers, configuration.Viewports, scenarios)
+	internalScenarios := converters.ScenariosToInternal(configuration.Browsers, configuration.Viewports, configuration.RetryCount, scenarios)
 
 	numInternalScenarios := len(internalScenarios)
 	fmt.Println("Generated", numInternalScenarios, "internal scenarios")
@@ -205,6 +205,9 @@ func main() {
 		if compareResult.HasReference {
 			r.ReferenceFileName = compareResult.ScreenshotterResult.FileName
 			r.MatchesReference = &compareResult.MatchesReference
+			if compareResult.ScreenshotterResult.RetriesUsed != nil && *compareResult.ScreenshotterResult.RetriesUsed > 0 {
+				r.RetriesUsed = compareResult.ScreenshotterResult.RetriesUsed
+			}
 
 			if !compareResult.MatchesReference {
 				// diff will exist

@@ -1,5 +1,5 @@
 # Stage 0: Build the base go system with playwright drivers
-FROM 020413372491.dkr.ecr.us-east-1.amazonaws.com/pullthrough/docker.io/library/golang:1.25.4-bookworm AS basesystem
+FROM 020413372491.dkr.ecr.us-east-1.amazonaws.com/pullthrough/docker.io/library/golang:1.25.6-bookworm AS basesystem
 WORKDIR /
 
 # Install CA certs & dependencies
@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 RUN GOOS=linux GOARCH=${TARGETARCH} go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps chromium firefox
 
 # Stage 1: Build the Go app
-FROM 020413372491.dkr.ecr.us-east-1.amazonaws.com/pullthrough/docker.io/library/golang:1.25.4-bookworm AS builder
+FROM 020413372491.dkr.ecr.us-east-1.amazonaws.com/pullthrough/docker.io/library/golang:1.25.6-bookworm AS builder
 WORKDIR /app
 
 # Copy Go module files and download dependencies

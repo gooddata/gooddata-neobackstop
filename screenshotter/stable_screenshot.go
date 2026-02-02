@@ -2,15 +2,13 @@ package screenshotter
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/gooddata/gooddata-neobackstop/viewport"
 	"github.com/playwright-community/playwright-go"
 )
 
-// takeStableScreenshot - the original concept for this function was to take multiple screenshots and stitch them
-// together, but that might not be necessary
-// If filePath is provided, saves to disk and returns nil bytes. Otherwise returns bytes in memory.
-func takeStableScreenshot(page playwright.Page, filePath *string, originalViewport viewport.Viewport) ([]byte, error) {
+func takeStableScreenshotBytes(page playwright.Page, originalViewport viewport.Viewport) ([]byte, error) {
 	scrollHeightValue, err := page.Evaluate("() => document.documentElement.scrollHeight")
 	if err != nil {
 		return nil, err
@@ -39,16 +37,9 @@ func takeStableScreenshot(page playwright.Page, filePath *string, originalViewpo
 
 	// Now take a *regular* screenshot — NOT FullPage:true
 	var screenshotBytes []byte
-	if filePath == nil {
-		screenshotBytes, err = page.Screenshot(playwright.PageScreenshotOptions{
-			FullPage: playwright.Bool(false),
-		})
-	} else {
-		_, err = page.Screenshot(playwright.PageScreenshotOptions{
-			Path:     filePath,
-			FullPage: playwright.Bool(false),
-		})
-	}
+	screenshotBytes, err = page.Screenshot(playwright.PageScreenshotOptions{
+		FullPage: playwright.Bool(false),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -60,4 +51,8 @@ func takeStableScreenshot(page playwright.Page, filePath *string, originalViewpo
 	}
 
 	return screenshotBytes, nil
+}
+
+func saveScreenshotBytes(bytes []byte, filePath string) error {
+	return os.WriteFile(filePath, bytes, 0644)
 }

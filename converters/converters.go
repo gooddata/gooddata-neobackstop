@@ -9,7 +9,12 @@ import (
 	"github.com/gooddata/gooddata-neobackstop/viewport"
 )
 
-func scenarioToInternal(b browser.Browser, v viewport.Viewport, s scenario.Scenario) internals.Scenario {
+func scenarioToInternal(b browser.Browser, v viewport.Viewport, rc int, s scenario.Scenario) internals.Scenario {
+	retryCount := rc
+	if s.RetryCount != nil {
+		retryCount = *s.RetryCount
+	}
+
 	return internals.Scenario{
 		Browser:             b,
 		Viewport:            v,
@@ -28,10 +33,11 @@ func scenarioToInternal(b browser.Browser, v viewport.Viewport, s scenario.Scena
 		PostInteractionWait: s.PostInteractionWait,
 		ScrollToSelector:    s.ScrollToSelector,
 		MisMatchThreshold:   s.MisMatchThreshold,
+		RetryCount:          retryCount,
 	}
 }
 
-func ScenariosToInternal(browsers []browser.Browser, viewports []viewport.Viewport, scenarios []scenario.Scenario) []internals.Scenario {
+func ScenariosToInternal(browsers []browser.Browser, viewports []viewport.Viewport, retryCount int, scenarios []scenario.Scenario) []internals.Scenario {
 	output := make([]internals.Scenario, 0) // we could pre-calculate this, but until we do multi-browser testing, it's not worth it
 
 	for _, s := range scenarios {
@@ -39,11 +45,11 @@ func ScenariosToInternal(browsers []browser.Browser, viewports []viewport.Viewpo
 			for _, b := range browsers {
 				if s.Viewports == nil {
 					for _, v := range viewports {
-						output = append(output, scenarioToInternal(b, v, s))
+						output = append(output, scenarioToInternal(b, v, retryCount, s))
 					}
 				} else {
 					for _, v := range s.Viewports {
-						output = append(output, scenarioToInternal(b, v, s))
+						output = append(output, scenarioToInternal(b, v, retryCount, s))
 					}
 				}
 			}
@@ -51,11 +57,11 @@ func ScenariosToInternal(browsers []browser.Browser, viewports []viewport.Viewpo
 			for _, b := range s.Browsers {
 				if s.Viewports == nil {
 					for _, v := range viewports {
-						output = append(output, scenarioToInternal(b, v, s))
+						output = append(output, scenarioToInternal(b, v, retryCount, s))
 					}
 				} else {
 					for _, v := range s.Viewports {
-						output = append(output, scenarioToInternal(b, v, s))
+						output = append(output, scenarioToInternal(b, v, retryCount, s))
 					}
 				}
 			}

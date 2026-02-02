@@ -12,6 +12,7 @@ type Result struct {
 	PreComputedMatch              *bool    // If set, comparison was already done
 	PreComputedMismatchPercentage *float64 // Mismatch percentage if comparison was done
 	PreComputedHasReference       *bool    // Whether reference existed during pre-computation
+	RetriesUsed                   *int     // Number of retries used
 }
 
 func buildResultFromScenario(scenario internals.Scenario, fileName *string, error *string) Result {
