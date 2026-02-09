@@ -156,7 +156,6 @@ func loadScenarioAndCaptureScreenshot(logPrefix string, page playwright.Page, jo
 	}
 	fmt.Println(logPrefix, "screenshot: captured in", time.Since(t1).Milliseconds(), "ms")
 
-
 	// Move mouse outside viewport to clear any hover states
 	if job.HoverSelector != nil || job.HoverSelectors != nil || job.ClickSelector != nil || job.ClickSelectors != nil {
 		err = page.Mouse().Move(-1, -1)
@@ -267,7 +266,12 @@ func Job(logPrefix string, saveDir string, viewportLabel string, page playwright
 		results <- result
 
 	} else {
-		saveScreenshotBytes(screenshotBytes, referencePath)
+		testPath := conf.BitmapsTestPath + "/" + fileName
+		if err := saveScreenshotBytes(screenshotBytes, testPath); err != nil {
+			errStr := fmt.Sprintf("could not save test screenshot: %v", err)
+			results <- buildResultFromScenario(job, &fileName, &errStr)
+			return
+		}
 		results <- buildResultFromScenario(job, &fileName, nil)
 	}
 }
