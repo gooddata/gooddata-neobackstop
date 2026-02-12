@@ -2,7 +2,6 @@ package operations
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/gooddata/gooddata-neobackstop/internals"
@@ -20,7 +19,8 @@ func ReloadAfterReady(logPrefix string, page playwright.Page, scenario internals
 	if _, err := page.Reload(playwright.PageReloadOptions{
 		WaitUntil: playwright.WaitUntilStateNetworkidle,
 	}); err != nil {
-		log.Panicf("could not reload: %v", err)
+		e := "ReloadAfterReady: reload failed: " + err.Error()
+		return &e
 	}
 	fmt.Println(logPrefix, "reloadAfterReady: page reloaded in", time.Since(t0).Milliseconds(), "ms")
 
