@@ -1,7 +1,6 @@
 package internals
 
 import (
-	"github.com/gooddata/gooddata-neobackstop/browser"
 	"github.com/gooddata/gooddata-neobackstop/scenario"
 	"github.com/gooddata/gooddata-neobackstop/viewport"
 )
@@ -9,7 +8,7 @@ import (
 // Scenario - An internal scenario type, properties in order of processing, constructed from scenario.Scenario and config.Config
 // this type is exposed in ci-report so needs json keys
 type Scenario struct {
-	Browser             browser.Browser                         `json:"browser"`
+	Browser             string                                  `json:"browser"`
 	Viewport            viewport.Viewport                       `json:"viewport"`
 	Id                  string                                  `json:"id"`
 	Label               string                                  `json:"label"`

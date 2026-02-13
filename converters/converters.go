@@ -3,13 +3,12 @@ package converters
 import (
 	"sort"
 
-	"github.com/gooddata/gooddata-neobackstop/browser"
 	"github.com/gooddata/gooddata-neobackstop/internals"
 	"github.com/gooddata/gooddata-neobackstop/scenario"
 	"github.com/gooddata/gooddata-neobackstop/viewport"
 )
 
-func scenarioToInternal(b browser.Browser, v viewport.Viewport, rc int, s scenario.Scenario) internals.Scenario {
+func scenarioToInternal(b string, v viewport.Viewport, rc int, s scenario.Scenario) internals.Scenario {
 	retryCount := rc
 	if s.RetryCount != nil {
 		retryCount = *s.RetryCount
@@ -37,12 +36,13 @@ func scenarioToInternal(b browser.Browser, v viewport.Viewport, rc int, s scenar
 	}
 }
 
-func ScenariosToInternal(browsers []browser.Browser, viewports []viewport.Viewport, retryCount int, scenarios []scenario.Scenario) []internals.Scenario {
-	output := make([]internals.Scenario, 0) // we could pre-calculate this, but until we do multi-browser testing, it's not worth it
+func ScenariosToInternal(defaultBrowsers []string, viewports []viewport.Viewport, retryCount int, scenarios []scenario.Scenario) []internals.Scenario {
+	output := make([]internals.Scenario, 0) // we could pre-calculate size of this, but until we do multi-browser testing, it's not worth it
 
 	for _, s := range scenarios {
+		// if the scenario has a browsers config, we use that, otherwise, we use the defaultBrowsers value in the config file
 		if s.Browsers == nil {
-			for _, b := range browsers {
+			for _, b := range defaultBrowsers {
 				if s.Viewports == nil {
 					for _, v := range viewports {
 						output = append(output, scenarioToInternal(b, v, retryCount, s))

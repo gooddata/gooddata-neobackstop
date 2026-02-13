@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/gooddata/gooddata-neobackstop/browser"
 	"github.com/gooddata/gooddata-neobackstop/state"
 	"github.com/gooddata/gooddata-neobackstop/viewport"
 )
@@ -93,7 +92,7 @@ func (d *SelectorThenDelay) UnmarshalJSON(data []byte) error {
 
 // Scenario - properties in order of processing, scenarios.json must be an array of Scenario
 type Scenario struct {
-	Browsers            []browser.Browser              `json:"browsers"`
+	Browsers            []string                       `json:"browsers"`
 	Viewports           []viewport.Viewport            `json:"viewports"`
 	Id                  string                         `json:"id"`
 	Label               string                         `json:"label"`
