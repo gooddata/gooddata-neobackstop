@@ -17,6 +17,20 @@ type CurrentContext struct {
 	ViewportHeight int
 }
 
+type CurrentBrowser struct {
+	Alias string
+	Name  string
+}
+
+func getBrowserName(conf config.Config, browserAlias string) browser.Browser {
+	b, ok := conf.Browsers[browserAlias]
+	if !ok {
+		panic("Browser not found: " + browserAlias + ". This should not be possible.")
+	}
+
+	return b.Name
+}
+
 func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs chan internals.Scenario, wg *sync.WaitGroup, results chan Result, id int, mode string) {
 	defer wg.Done()
 
@@ -24,7 +38,7 @@ func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs cha
 
 	fmt.Println(logPrefix, "launching browser")
 
-	var currentBrowser *browser.Browser
+	var currentBrowser *string
 	var b playwright.Browser
 
 	var currentContext *CurrentContext
@@ -50,18 +64,19 @@ func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs cha
 		// if no browser is launched, launch one
 		if currentBrowser == nil {
 			var err error // init here so we can directly assign to `b`
-			if job.Browser == browser.Chromium {
+			browserConfig := conf.Browsers[job.Browser]
+			if browserConfig.Name == browser.Chromium {
 				b, err = pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
 					Headless: playwright.Bool(true),
-					Args:     conf.Args[browser.Chromium],
+					Args:     browserConfig.Args,
 				})
 				if err != nil {
 					log.Panicf("could not launch browser: %v", err)
 				}
-			} else if job.Browser == browser.Firefox {
+			} else if browserConfig.Name == browser.Firefox {
 				b, err = pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{
 					Headless: playwright.Bool(true),
-					Args:     conf.Args[browser.Firefox],
+					Args:     browserConfig.Args,
 				})
 				if err != nil {
 					log.Panicf("could not launch browser: %v", err)

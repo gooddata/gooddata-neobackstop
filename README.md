@@ -126,15 +126,19 @@ func main() {
 
     // Convert to internal format
     internalScenarios := converters.ScenariosToInternal(
-        cfg.Browsers, cfg.Viewports, cfg.RetryCount, scenarios,
+        cfg.DefaultBrowsers, cfg.Viewports, cfg.RetryCount, scenarios,
     )
 
-    // Install and run Playwright
-    browsers := make([]string, len(cfg.Browsers))
-    for i, b := range cfg.Browsers {
-        browsers[i] = string(b)
+    // Grab unique browsers to install, from the browser alias map
+    browsers := map[string]interface{}{}
+    for _, b := range cfg.Browsers {
+        browsers[string(b.Name)] = nil
     }
-    playwright.Install(&playwright.RunOptions{Browsers: browsers})
+
+    // Install and run Playwright
+    playwright.Install(&playwright.RunOptions{
+        Browsers: slices.Collect(maps.Keys(browsers)),
+    })
     pw, _ := playwright.Run()
 
     // Set up worker pool for screenshots
@@ -192,7 +196,7 @@ func main() {
     json.Unmarshal(scenariosBytes, &scenarios)
 
     internalScenarios := converters.ScenariosToInternal(
-        cfg.Browsers, cfg.Viewports, cfg.RetryCount, scenarios,
+        cfg.DefaultBrowsers, cfg.Viewports, cfg.RetryCount, scenarios,
     )
 
     // Find a specific scenario to debug
@@ -208,7 +212,7 @@ func main() {
     pw, _ := playwright.Run()
     browser, _ := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
         Headless: playwright.Bool(false), // Show the browser!
-        Args:     cfg.Args["chromium"],
+        Args:     cfg.Browsers["chromium"].Args,
     })
 
     context, _ := browser.NewContext(playwright.BrowserNewContextOptions{
@@ -226,8 +230,7 @@ func main() {
     }()
 
     // Run the screenshot job with debug mode enabled
-    screenshotter.Job("debug |", "./debug-output", debugScenario.Viewport.Label,
-        page, *debugScenario, results, true, "test", cfg) // true = debug mode
+    screenshotter.Job("debug |", "./debug-output", debugScenario.Viewport.Label, page, *debugScenario, results, true, "test", cfg) // true = debug mode
 
     browser.Close()
     pw.Stop()
@@ -261,7 +264,54 @@ The main configuration file controls browser settings, viewports, output paths, 
 ```json
 {
     "id": "my-visual-tests",
-    "browsers": ["chromium", "firefox"],
+    "browsers": {
+        "chromium": {
+            "name": "chromium",
+            "args": [
+                "--disable-infobars",
+                "--disable-background-networking",
+                "--disable-background-timer-throttling",
+                "--disable-backgrounding-occluded-windows",
+                "--disable-breakpad",
+                "--disable-client-side-phishing-detection",
+                "--disable-default-apps",
+                "--disable-dev-shm-usage",
+                "--disable-extensions",
+                "--disable-features=site-per-process",
+                "--disable-hang-monitor",
+                "--disable-ipc-flooding-protection",
+                "--disable-popup-blocking",
+                "--disable-prompt-on-repost",
+                "--disable-renderer-backgrounding",
+                "--disable-sync",
+                "--disable-translate",
+                "--metrics-recording-only",
+                "--no-first-run",
+                "--safebrowsing-disable-auto-update",
+                "--enable-automation",
+                "--disable-component-update",
+                "--disable-web-resource",
+                "--mute-audio",
+                "--no-sandbox",
+                "--disable-software-rasterizer",
+                "--disable-gpu",
+                "--disable-setuid-sandbox",
+                "--force-device-scale-factor=1"
+            ]
+        },
+        "firefox": {
+            "name": "firefox",
+            "args": [
+                "--disable-dev-shm-usage",
+                "--disable-extensions",
+                "--enable-automation",
+                "--mute-audio",
+                "--no-sandbox",
+                "--disable-gpu"
+            ]
+        }
+    },
+    "defaultBrowsers": ["chromium", "firefox"],
     "viewports": [
         {
             "label": "desktop",
@@ -281,47 +331,6 @@ The main configuration file controls browser settings, viewports, output paths, 
         "showSuccessfulTests": false
     },
     "ciReportPath": "./output/ci-report",
-    "args": {
-        "chromium": [
-            "--disable-infobars",
-            "--disable-background-networking",
-            "--disable-background-timer-throttling",
-            "--disable-backgrounding-occluded-windows",
-            "--disable-breakpad",
-            "--disable-client-side-phishing-detection",
-            "--disable-default-apps",
-            "--disable-dev-shm-usage",
-            "--disable-extensions",
-            "--disable-features=site-per-process",
-            "--disable-hang-monitor",
-            "--disable-ipc-flooding-protection",
-            "--disable-popup-blocking",
-            "--disable-prompt-on-repost",
-            "--disable-renderer-backgrounding",
-            "--disable-sync",
-            "--disable-translate",
-            "--metrics-recording-only",
-            "--no-first-run",
-            "--safebrowsing-disable-auto-update",
-            "--enable-automation",
-            "--disable-component-update",
-            "--disable-web-resource",
-            "--mute-audio",
-            "--no-sandbox",
-            "--disable-software-rasterizer",
-            "--disable-gpu",
-            "--disable-setuid-sandbox",
-            "--force-device-scale-factor=1"
-        ],
-        "firefox": [
-            "--disable-dev-shm-usage",
-            "--disable-extensions",
-            "--enable-automation",
-            "--mute-audio",
-            "--no-sandbox",
-            "--disable-gpu"
-        ]
-    },
     "asyncCaptureLimit": 2,
     "asyncCompareLimit": 6,
     "retryCount": 0
@@ -330,20 +339,51 @@ The main configuration file controls browser settings, viewports, output paths, 
 
 #### Configuration Options
 
-| Option                           | Type       | Description                                |
-|----------------------------------|------------|--------------------------------------------|
-| `id`                             | string     | Identifier for the test suite              |
-| `browsers`                       | string[]   | Browsers to use: `"chromium"`, `"firefox"` |
-| `viewports`                      | Viewport[] | List of viewport configurations            |
-| `bitmapsReferencePath`           | string     | Path to store reference screenshots        |
-| `bitmapsTestPath`                | string     | Path to store test screenshots             |
-| `htmlReport.path`                | string     | Path for HTML report output                |
-| `htmlReport.showSuccessfulTests` | boolean    | Include passing tests in HTML report       |
-| `ciReportPath`                   | string     | Path for CI JSON report                    |
-| `args`                           | object     | Browser-specific launch arguments          |
-| `asyncCaptureLimit`              | number     | Max concurrent screenshot captures         |
-| `asyncCompareLimit`              | number     | Max concurrent image comparisons           |
-| `retryCount`                     | number     | Extra retries on mismatch in test mode     |
+| Option                           | Type                        | Description                                                    |
+|----------------------------------|-----------------------------|----------------------------------------------------------------|
+| `id`                             | string                      | Identifier for the test suite                                  |
+| `browsers`                       | map\<string, BrowserConfig> | Browser alias map (see [Browser Aliases](#browser-aliases))    |
+| `defaultBrowsers`                | string[]                    | Browser aliases to use when a scenario doesn't specify its own |
+| `viewports`                      | Viewport[]                  | List of viewport configurations                                |
+| `bitmapsReferencePath`           | string                      | Path to store reference screenshots                            |
+| `bitmapsTestPath`                | string                      | Path to store test screenshots                                 |
+| `htmlReport.path`                | string                      | Path for HTML report output                                    |
+| `htmlReport.showSuccessfulTests` | boolean                     | Include passing tests in HTML report                           |
+| `ciReportPath`                   | string                      | Path for CI JSON report                                        |
+| `asyncCaptureLimit`              | number                      | Max concurrent screenshot captures                             |
+| `asyncCompareLimit`              | number                      | Max concurrent image comparisons                               |
+| `retryCount`                     | number                      | Extra retries on mismatch in test mode                         |
+
+#### Browser Aliases
+
+A browser alias is a named configuration that pairs a browser type (`"chromium"` or `"firefox"`) with a set of launch arguments. The key in the `browsers` map is the alias, and the value specifies the browser `name` and `args`.
+
+Aliases are used as prefixes in screenshot file names, so they **must be snake_case**.
+
+If you only need one configuration per browser type, the recommended convention is to use the browser name itself as the alias (e.g. `"chromium"` for a Chromium config, `"firefox"` for a Firefox config).
+
+When you need multiple configurations of the same browser engine (e.g. Chromium with different flags), use descriptive aliases:
+
+```json
+{
+    "browsers": {
+        "chromium_default": {
+            "name": "chromium",
+            "args": ["--no-sandbox", "--disable-gpu"]
+        },
+        "chromium_hidpi": {
+            "name": "chromium",
+            "args": ["--no-sandbox", "--force-device-scale-factor=2"]
+        }
+    },
+    "defaultBrowsers": ["chromium_default"]
+}
+```
+
+| BrowserConfig Property | Type     | Description                                    |
+|------------------------|----------|------------------------------------------------|
+| `name`                 | string   | Browser engine: `"chromium"` or `"firefox"`    |
+| `args`                 | string[] | Launch arguments passed to the browser         |
 
 #### Viewport Configuration
 
@@ -378,25 +418,25 @@ Defines the test scenarios - which pages to capture and how to interact with the
 
 #### Scenario Options
 
-| Option                | Type             | Description                                       |
-|-----------------------|------------------|---------------------------------------------------|
-| `id`                  | string           | Unique identifier for the scenario                |
-| `label`               | string           | Human-readable label (used in reports)            |
-| `url`                 | string           | URL to navigate to                                |
-| `browsers`            | string[]         | Override global browsers for this scenario        |
-| `viewports`           | Viewport[]       | Override global viewports for this scenario       |
-| `readySelector`       | string           | CSS selector to wait for before capture           |
-| `reloadAfterReady`    | boolean          | Reload page after ready selector appears          |
-| `delay`               | number \| object | Wait time after ready (see below)                 |
-| `keyPressSelector`    | object           | Element to focus and key to press                 |
-| `hoverSelector`       | string           | Single element to hover over                      |
-| `hoverSelectors`      | array            | Multiple elements to hover in sequence            |
-| `clickSelector`       | string           | Single element to click                           |
-| `clickSelectors`      | array            | Multiple elements to click in sequence            |
-| `postInteractionWait` | string \| number | Wait after interactions (selector or ms)          |
-| `scrollToSelector`    | string           | Element to scroll into view                       |
-| `misMatchThreshold`   | number           | Allowed mismatch percentage (0-100)               |
-| `retryCount`          | number           | Extra retries for the scenario (overrides global) |
+| Option                | Type             | Description                                                    |
+|-----------------------|------------------|----------------------------------------------------------------|
+| `id`                  | string           | Unique identifier for the scenario                             |
+| `label`               | string           | Human-readable label (used in reports)                         |
+| `url`                 | string           | URL to navigate to                                             |
+| `browsers`            | string[]         | Override `defaultBrowsers` for this scenario (browser aliases) |
+| `viewports`           | Viewport[]       | Override global viewports for this scenario                    |
+| `readySelector`       | string           | CSS selector to wait for before capture                        |
+| `reloadAfterReady`    | boolean          | Reload page after ready selector appears                       |
+| `delay`               | number \| object | Wait time after ready (see below)                              |
+| `keyPressSelector`    | object           | Element to focus and key to press                              |
+| `hoverSelector`       | string           | Single element to hover over                                   |
+| `hoverSelectors`      | array            | Multiple elements to hover in sequence                         |
+| `clickSelector`       | string           | Single element to click                                        |
+| `clickSelectors`      | array            | Multiple elements to click in sequence                         |
+| `postInteractionWait` | string \| number | Wait after interactions (selector or ms)                       |
+| `scrollToSelector`    | string           | Element to scroll into view                                    |
+| `misMatchThreshold`   | number           | Allowed mismatch percentage (0-100)                            |
+| `retryCount`          | number           | Extra retries for the scenario (overrides global)              |
 
 ## Scenario Examples
 
@@ -435,7 +475,7 @@ Override global viewports for specific scenarios:
 
 ### With Browser Override
 
-Run a scenario only on specific browsers:
+Run a scenario only on specific browser aliases (must be defined in the config `browsers` map):
 
 ```json
 {

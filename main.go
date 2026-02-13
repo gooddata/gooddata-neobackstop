@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"maps"
 	"os"
 	"slices"
 	"strconv"
@@ -80,21 +81,22 @@ func main() {
 	numScenarios := len(scenarios)
 	fmt.Println("Received", numScenarios, "scenarios")
 
-	// we use a slice of our Browser enums, which we need to convert to a slice of strings
-	browsers := make([]string, len(configuration.Browsers))
-	for i, b := range configuration.Browsers {
-		browsers[i] = string(b)
+	// grab unique browsers to install, from the browser alias map
+	browsers := map[string]interface{}{}
+	for _, b := range configuration.Browsers {
+		// convert to string because playwright.Install requires a slice of strings
+		browsers[string(b.Name)] = nil
 	}
 
 	// download drivers
 	if err = playwright.Install(&playwright.RunOptions{
-		Browsers: browsers,
+		Browsers: slices.Collect(maps.Keys(browsers)),
 	}); err != nil {
 		log.Panicf("could not install playwright drivers: %v", err)
 	}
 
 	// build internal scenarios
-	internalScenarios := converters.ScenariosToInternal(configuration.Browsers, configuration.Viewports, configuration.RetryCount, scenarios)
+	internalScenarios := converters.ScenariosToInternal(configuration.DefaultBrowsers, configuration.Viewports, configuration.RetryCount, scenarios)
 
 	numInternalScenarios := len(internalScenarios)
 	fmt.Println("Generated", numInternalScenarios, "internal scenarios")
