@@ -339,9 +339,10 @@ jobs:
 
       - name: Create Release Body
         id: release_body
+        env:
+          CHANGELOG: ${{ needs.extract-changelog.outputs.changelog_text }}
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
-          CHANGELOG="${{ needs.extract-changelog.outputs.changelog_text }}"
 
           # Create the release body with Docker information and changelog
           cat << EOF > release_body.md
