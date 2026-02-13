@@ -22,15 +22,6 @@ type CurrentBrowser struct {
 	Name  string
 }
 
-func getBrowserName(conf config.Config, browserAlias string) browser.Browser {
-	b, ok := conf.Browsers[browserAlias]
-	if !ok {
-		panic("Browser not found: " + browserAlias + ". This should not be possible.")
-	}
-
-	return b.Name
-}
-
 func Run(saveDir string, pw *playwright.Playwright, conf config.Config, jobs chan internals.Scenario, wg *sync.WaitGroup, results chan Result, id int, mode string) {
 	defer wg.Done()
 
