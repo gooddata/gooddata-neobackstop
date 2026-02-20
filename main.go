@@ -124,7 +124,7 @@ func main() {
 	screenshotterResults := make(chan screenshotter.Result, numInternalScenarios)
 	var wg1 sync.WaitGroup
 
-	for w := 1; w <= configuration.AsyncCaptureLimit; w++ {
+	for w := 1; w <= min(len(internalScenarios), configuration.AsyncCaptureLimit); w++ {
 		wg1.Add(1)
 		go screenshotter.Run(screenshotterSaveDir, pw, configuration, screenshotterJobs, &wg1, screenshotterResults, w, mode)
 	}
@@ -172,7 +172,7 @@ func main() {
 	compareResults := make(chan comparer.Result, numSuccessfulCaptures)
 	var wg2 sync.WaitGroup
 
-	for w := 1; w <= configuration.AsyncCompareLimit; w++ {
+	for w := 1; w <= min(numSuccessfulCaptures, configuration.AsyncCompareLimit); w++ {
 		wg2.Add(1)
 		go comparer.Run(configuration, compareJobs, &wg2, compareResults, w)
 	}
