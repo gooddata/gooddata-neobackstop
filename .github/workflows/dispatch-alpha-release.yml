@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: gooddata/github-actions/docker/setup-buildx@master
 
       - name: Generate alpha version
         id: version
