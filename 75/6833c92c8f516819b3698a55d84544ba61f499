@@ -1,0 +1,23 @@
+.github/workflows/dispatch-alpha-release.yml
+  s_d07e0d1eb50dfb::t_42a0c2ed2b2427 21
+.github/workflows/post-merge.yml
+  s_d07e0d1eb50dfb::t_315f5dd8a62b96 100
+.github/workflows/pull-request-status-check.yml
+  s_d07e0d1eb50dfb::t_caef3c4946f45f 35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "756833c92c8f516819b3698a55d84544ba61f499",
+  "prompts": {},
+  "sessions": {
+    "s_d07e0d1eb50dfb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cf7854b0-1874-4714-9a6d-cae729d1b1d7",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Hung Cao Hiep <hung.cao@gooddata.com>"
+    }
+  }
+}
