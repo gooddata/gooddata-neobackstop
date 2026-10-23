@@ -11,7 +11,7 @@ import (
 	"github.com/gooddata/gooddata-neobackstop/internals"
 	"github.com/gooddata/gooddata-neobackstop/screenshotter/operations"
 	"github.com/gooddata/gooddata-neobackstop/utils"
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 func cleanText(text string) string {

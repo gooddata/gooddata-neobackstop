@@ -22,8 +22,7 @@ import (
 	"github.com/gooddata/gooddata-neobackstop/scenario"
 	"github.com/gooddata/gooddata-neobackstop/screenshotter"
 	"github.com/gooddata/gooddata-neobackstop/utils"
-
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 func main() {

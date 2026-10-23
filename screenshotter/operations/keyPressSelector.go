@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gooddata/gooddata-neobackstop/internals"
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 var validKeyPressKeys = []string{
