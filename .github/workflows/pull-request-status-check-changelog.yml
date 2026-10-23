@@ -34,11 +34,11 @@ jobs:
           echo "Validating CHANGELOG.md format according to Keep a Changelog..."
 
           # Use keep-a-changelog to validate the changelog format
-          if ! npx keep-a-changelog CHANGELOG.md > /dev/null 2>&1; then
+          if ! npx keep-a-changelog > /dev/null 2>&1; then
             echo "❌ CHANGELOG.md is not valid according to Keep a Changelog format"
             echo "Please ensure your changelog follows the format at https://keepachangelog.com"
             echo "Validation output:"
-            npx keep-a-changelog CHANGELOG.md
+            npx keep-a-changelog
             exit 1
           fi
 

@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/gooddata/gooddata-neobackstop/viewport"
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 func takeStableScreenshotBytes(page playwright.Page, originalViewport viewport.Viewport) ([]byte, error) {

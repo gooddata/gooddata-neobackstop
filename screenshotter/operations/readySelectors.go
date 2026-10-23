@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gooddata/gooddata-neobackstop/scenario"
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 func ReadySelectors(logPrefix string, page playwright.Page, selectors []scenario.ReadySelector) *string {

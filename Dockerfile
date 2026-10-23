@@ -11,7 +11,9 @@ RUN apt-get update && apt-get install -y \
     rm -rf /var/lib/apt/lists/*
 
 # Install Playwright drivers
-RUN GOOS=linux GOARCH=${TARGETARCH} go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps chromium firefox
+# The CLI version MUST match the playwright-go version pinned in go.mod, otherwise
+# the installed driver/browsers can be incompatible with the library and fail to launch.
+RUN GOOS=linux GOARCH=${TARGETARCH} go run github.com/mxschmitt/playwright-go/cmd/playwright@v0.6201.1 install --with-deps chromium firefox
 
 # Stage 1: Build the Go app
 FROM 020413372491.dkr.ecr.us-east-1.amazonaws.com/pullthrough/docker.io/library/golang:1.25.6-bookworm AS builder

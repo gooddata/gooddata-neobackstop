@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gooddata/gooddata-neobackstop/internals"
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 func ScrollToSelector(logPrefix string, page playwright.Page, scenario internals.Scenario) *string {

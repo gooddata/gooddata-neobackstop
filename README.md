@@ -108,7 +108,7 @@ import (
     "github.com/gooddata/gooddata-neobackstop/internals"
     "github.com/gooddata/gooddata-neobackstop/scenario"
     "github.com/gooddata/gooddata-neobackstop/screenshotter"
-    "github.com/playwright-community/playwright-go"
+    "github.com/mxschmitt/playwright-go"
 )
 
 func main() {
@@ -180,7 +180,7 @@ import (
     "github.com/gooddata/gooddata-neobackstop/internals"
     "github.com/gooddata/gooddata-neobackstop/scenario"
     "github.com/gooddata/gooddata-neobackstop/screenshotter"
-    "github.com/playwright-community/playwright-go"
+    "github.com/mxschmitt/playwright-go"
 )
 
 func main() {

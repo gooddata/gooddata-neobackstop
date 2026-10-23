@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.3] - 2026-10-23
+
+### Changed
+- Switched Playwright dependency from `github.com/playwright-community/playwright-go` v0.5200.1 to `github.com/mxschmitt/playwright-go` v0.6201.1, updating imports, the Dockerfile driver install and README examples accordingly
+- Dropped the indirect `go-jose/go-jose/v3` dependency
+- Pinned the Playwright CLI in the Dockerfile to v0.6201.1 (matching go.mod) instead of `@latest`, so rebuilds cannot silently pull a mismatched driver and browser set
+
 ## [0.21.2] - 2026-02-20
 
 ### Changed
@@ -162,6 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
+[0.21.3]: https://github.com/gooddata/gooddata-neobackstop/compare/v0.21.2...v0.21.3
 [0.21.2]: https://github.com/gooddata/gooddata-neobackstop/compare/v0.21.1...v0.21.2
 [0.21.1]: https://github.com/gooddata/gooddata-neobackstop/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/gooddata/gooddata-neobackstop/compare/v0.20.2...v0.21.0
